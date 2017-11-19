@@ -1,4 +1,8 @@
-#include <allegro.h>
+#include <allegro5/allegro5.h>
+#include <allegro5/allegro_image.h>
+
+
+//#include <allegro.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -16,13 +20,19 @@
 #define startx 100
 #define acex 463
 
-BITMAP * backround;
-BITMAP * buffer;
-BITMAP * outline;
-BITMAP * cardbitmap;
-BITMAP * cursor;
-BITMAP * cbuffer;
-BITMAP *bmp_buff;
+ALLEGRO_BITMAP * backround;
+ALLEGRO_BITMAP * buffer;
+ALLEGRO_BITMAP * outline;
+ALLEGRO_BITMAP * cardbitmap;
+ALLEGRO_BITMAP * cursor;
+ALLEGRO_BITMAP * cbuffer;
+ALLEGRO_BITMAP * bmp_buff;
+
+ALLEGRO_DISPLAY * display;
+
+ALLEGRO_KEYBOARD_STATE state;
+
+ALLEGRO_EVENT_QUEUE * event_queue;
 
 
 
@@ -81,42 +91,64 @@ int can_move(int cardstart, int cardfinish);
 int can_ace_move(int cardstart, int cardfinish);
 int win_conditions();
 
+#define SCREEN_W 1440
+#define SCREEN_H 900
 
-int main (void)
+int main ()
 {
 
 
-	allegro_init();
-    install_keyboard(); 
-	install_mouse();
-	install_timer();
-	set_color_depth(32); 
-    set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1024,768,0,0);
-    
+	al_init();
+    int a = al_init_image_addon();
+    al_install_keyboard();
+	al_install_mouse();
+//	al_install_timer();
+//	set_color_depth(32);
+//    set_gfx_mode(GFX_AUTODETECT_WINDOWED, SCREEN_W,SCREEN_H,0,0);
+    display = al_create_display(SCREEN_W, SCREEN_H);
+    event_queue = al_create_event_queue();
+    al_register_event_source(event_queue, al_get_display_event_source(display));
+
+
 
     srand(time(NULL));
 
-	bmp_buff = create_bitmap(SCREEN_W, SCREEN_H);
-    backround = load_bitmap("backround.tga",NULL);
-	outline = load_bitmap("outline.bmp",NULL);
-    buffer = create_bitmap(1024,768);
-	cbuffer = create_bitmap(1024,768);
-    cardbitmap = load_bitmap("cards.bmp",NULL);
-    cursor = load_bitmap("cursor.bmp",NULL);
+	bmp_buff = al_create_bitmap(SCREEN_W, SCREEN_H);
+    backround = al_load_bitmap("backround.bmp");
+	outline = al_load_bitmap("outline.bmp");
+    buffer = al_create_bitmap(SCREEN_W,SCREEN_H);
+	cbuffer = al_create_bitmap(SCREEN_W,SCREEN_H);
+    cardbitmap = al_load_bitmap("cards.bmp");
+    cursor = al_load_bitmap("cursor.bmp");
 
-set_mouse_sprite(cursor);
-show_mouse(screen);
+    al_convert_mask_to_alpha(outline, al_map_rgb(255, 0, 255));
+    al_convert_mask_to_alpha(cardbitmap, al_map_rgb(255, 0, 255));
+
+//set_mouse_sprite(cursor);
+//show_mouse(screen);
+    al_set_system_mouse_cursor(display, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
 
 
-set_close_button_callback(is_exit);
+//set_close_button_callback(is_exit);
 
 	while (!done){
-       
+
+        al_get_keyboard_state(&state);
+
+        ALLEGRO_EVENT event;
+        while (!al_is_event_queue_empty(event_queue)) {
+            al_get_next_event(event_queue, &event);
+
+            if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+                return 1;
+            }
+        }
+
 		if (newgame){setup();}
 
-		if (key[KEY_1]){set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1024,768,0,0);}
-        if (key[KEY_2]){set_gfx_mode(GFX_AUTODETECT_FULLSCREEN, 1280,768,0,0);}
-		if (key[KEY_ESC] || (key[KEY_ALT] && key[KEY_F4])){is_exit();}
+//		if (key[KEY_1]){set_gfx_mode(GFX_AUTODETECT_WINDOWED, SCREEN_W,SCREEN_H,0,0);}
+//        if (key[KEY_2]){set_gfx_mode(GFX_AUTODETECT_FULLSCREEN, 1280,SCREEN_H,0,0);}
+//		if (key[KEY_ESC] || (key[KEY_ALT] && key[KEY_F4])){is_exit();}
         
 
 		if (deckcur == -1){
@@ -181,8 +213,9 @@ set_close_button_callback(is_exit);
 		
 
 
-		if (key[KEY_7]){set_window_title("Allegro rules!");}
-		else {set_window_title("solitaire");}
+
+//		if (al_key_down(state, ALLEGRO_KEY_7)){set_window_title("Allegro rules!");}
+//		else {set_window_title("solitaire");}
 
 
         draw();
@@ -196,8 +229,8 @@ set_close_button_callback(is_exit);
 		//textprintf_ex(screen,font,10,10,makecol(0,0,0),makecol(250,250,250),"%d",deckcur);
 
 
-		if (key[KEY_UP]){deckcur++;rest(30);}
-		if (key[KEY_DOWN]){deckcur--;rest(30);}
+		if (al_key_down(&state, ALLEGRO_KEY_UP)){deckcur++;/*rest(30);*/}
+		if (al_key_down(&state, ALLEGRO_KEY_DOWN)){deckcur--;/*rest(30);*/}
 		if (deckcur < -1){deckcur = 7;}
 		if (deckcur > decktotal){deckcur =-1;}
 		times =0;
@@ -212,11 +245,11 @@ set_close_button_callback(is_exit);
 		if (win_conditions() == 1){/*do a wild win screen*/ is_exit();}
 
 
-if (key[KEY_ENTER]){newgame = 1; }
-if (key[KEY_A]){ace[0][12] = 13; ace[1][12] = 26; ace[2][12] = 39; ace[3][12] = 52;}
+if (al_key_down(&state, ALLEGRO_KEY_ENTER)){newgame = 1; }
+if (al_key_down(&state, ALLEGRO_KEY_A)){ace[0][12] = 13; ace[1][12] = 26; ace[2][12] = 39; ace[3][12] = 52;}
 
 
-rest(20);
+//rest(20);
 
 
 
@@ -225,24 +258,31 @@ rest(20);
 	}//while loop end
 
 
-destroy_bitmap(buffer);
-destroy_bitmap(outline);
-destroy_bitmap(backround);
-destroy_bitmap(cardbitmap);
-destroy_bitmap(cursor);
-destroy_bitmap(cbuffer);
+//destroy_bitmap(buffer);
+//destroy_bitmap(outline);
+//destroy_bitmap(backround);
+//destroy_bitmap(cardbitmap);
+//destroy_bitmap(cursor);
+//destroy_bitmap(cbuffer);
 
 
-allegro_exit();
+//allegro_exit();
 
 return 1;
     }//program end
-END_OF_MAIN() 
+//END_OF_MAIN()
 void mouse(){
+    int mouse_x, mouse_y;
+    ALLEGRO_MOUSE_STATE mouse;
 
-	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse_b & 1 && !pressed){deckcur++; pressed = 1;}
-	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse_b & 2 && !pressed){deckcur--; pressed = 1;}
-	if (!mouse_b){pressed = 0;}
+
+    al_get_mouse_state(&mouse);
+
+    al_get_mouse_cursor_position(&mouse_x, &mouse_y);
+
+	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons & 1 && !pressed){deckcur++; pressed = 1;}
+	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons & 2 && !pressed){deckcur--; pressed = 1;}
+	if (!mouse.buttons){pressed = 0;}
 
 
 
@@ -254,7 +294,7 @@ if (deck[deckcur][2]){b = 2;}
 if (b == -1){return;}
 
 //deck mouse movement
-	if (deckcur != -1 && mouse_x > 250 + (b * 20) && mouse_x < 350 + (b * 20) && mouse_y > decky && mouse_y < decky + 145 && mouse_b){
+	if (deckcur != -1 && mouse_x > 250 + (b * 20) && mouse_x < 350 + (b * 20) && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons){
 		temp2 = 1;
 		temp = deck[deckcur][b];
 		if(temp > 13){temp -= 13; temp2++;}
@@ -265,13 +305,20 @@ if (b == -1){return;}
 			y = mouse_y - decky;
 			cardcur = deck[deckcur][b];
 			deck[deckcur][b] = 0;
-		while (mouse_b){
+		while (mouse.buttons){
 
 
-        textprintf_ex(screen,font,10,10,makecol(0,0,0),makecol(250,250,250),"%d",b);
-        draw_sprite(cbuffer,buffer,0,0);
-		blit(cardbitmap,cbuffer,(100 * temp) - 100, (145 * temp2) - 145, mouse_x - x, mouse_y - y, 100, 145);
-		draw_sprite(screen,cbuffer,0,0);
+//        textprintf_ex(screen,font,10,10,makecol(0,0,0),makecol(250,250,250),"%d",b);
+            al_set_target_bitmap(cbuffer);
+            al_draw_bitmap(buffer,0,0,0);
+
+            al_set_target_bitmap(cbuffer);
+		    al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
+
+            al_set_target_backbuffer(display);
+            al_draw_bitmap(cbuffer, 0, 0, 0);
+            al_flip_display();
+
 		}
 
 
@@ -297,7 +344,7 @@ for (times = 0; times <= 6; times++){
 		if (!top[times][a]){break;}
 	}
 
-	if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) - 20 + (bot(times) * 20) && mouse_y < topy + (a * 20) + 145 - 20 + (bot(times) * 20) && mouse_b){
+	if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) - 20 + (bot(times) * 20) && mouse_y < topy + (a * 20) + 145 - 20 + (bot(times) * 20) && mouse.buttons){
 	    temp2 = 1;
 		temp = top[times][a - 1];
 		if(temp > 13){temp -= 13; temp2++;}
@@ -308,13 +355,19 @@ for (times = 0; times <= 6; times++){
 			y = mouse_y - topy - (a * 20) + 20 - (bot(times) * 20);
 			cardcur = top[times][a-1];
 			top[times][a - 1] = 0;
-		while (mouse_b){
+		while (mouse.buttons){
 
 
 
-        draw_sprite(cbuffer,buffer,0,0);
-		masked_blit(cardbitmap,cbuffer,(100 * temp) - 100, (145 * temp2) - 145, mouse_x - x, mouse_y - y, 100, 145);
-		draw_sprite(screen,cbuffer,0,0);
+            al_set_target_bitmap(cbuffer);
+            al_draw_bitmap(buffer,0,0,0);
+
+            al_set_target_bitmap(cbuffer);
+            al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
+
+            al_set_target_backbuffer(display);
+            al_draw_bitmap(cbuffer, 0, 0, 0);
+            al_flip_display();
 		
 		}
 
@@ -342,7 +395,7 @@ for (times = 0; times <= 6; times++){
 	}
 if (var5 > 1){
   for (a = 0; a < var5 - 1; a++){
-	if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) + (bot(times) * 20) && mouse_y < topy + (a * 20) + 20 + (bot(times) * 20) && mouse_b){
+	if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) + (bot(times) * 20) && mouse_y < topy + (a * 20) + 20 + (bot(times) * 20) && mouse.buttons){
 	        x = mouse_x - startx - (times * 121);
 			y = mouse_y - topy - (a * 20) + 20 - (bot(times) * 20);
 		
@@ -359,16 +412,23 @@ if (var5 > 1){
 			manycardcur[var6][0] = top[times][var6];
 			top[times][var6] = 0;
 	  }
-		while (mouse_b){
+		while (mouse.buttons){
 
 
+            al_set_target_bitmap(cbuffer);
+            al_draw_bitmap(buffer,0,0,0);
 
-        draw_sprite(cbuffer,buffer,0,0);
+
+            al_set_target_bitmap(cbuffer);
+
 		for (var6 = a; var6 < var5 + a; var6++){
-		masked_blit(cardbitmap,cbuffer,(100 * manycardcur[var6][1]) - 100, (145 * manycardcur[var6][2]) - 145, mouse_x - x, mouse_y - y + (var6 * 20) + 20 - (a * 20), 100, 145);
+            al_draw_bitmap_region(cardbitmap, (100 * manycardcur[var6][1]) - 100, (145 * manycardcur[var6][2]) - 145, 100, 145, mouse_x - x, mouse_y - y + (var6 * 20) + 20 - (a * 20), 0);
 		}
-		textprintf_ex(screen,font,100,100,makecol(0,0,0),makecol(250,250,250),"a = %d",manycardcur[0][0]);
-		draw_sprite(screen,cbuffer,0,0);
+//		textprintf_ex(screen,font,100,100,makecol(0,0,0),makecol(250,250,250),"a = %d",manycardcur[0][0]);
+
+            al_set_target_backbuffer(display);
+            al_draw_bitmap(cbuffer, 0, 0, 0);
+            al_flip_display();
 		
 		}
 
@@ -404,7 +464,7 @@ for (times = 0; times <= 3; times++){
     for (a = 0; a < 12; a++){
 		if (!ace[times][a]){break;}
 	}
-	if(mouse_x > acex + (times * 121) && mouse_x < acex + 100 + (times * 121) && mouse_y > decky && mouse_y < decky + 145 && mouse_b){
+	if(mouse_x > acex + (times * 121) && mouse_x < acex + 100 + (times * 121) && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons){
 	    temp2 = 1;
 		temp = ace[times][a - 1];
 		if(temp > 13){temp -= 13; temp2++;}
@@ -415,13 +475,18 @@ for (times = 0; times <= 3; times++){
 			y = mouse_y - decky;
 			cardcur = ace[times][a-1];
 			ace[times][a - 1] = 0;
-		while (mouse_b){
+		while (mouse.buttons){
 
 
+            al_set_target_bitmap(cbuffer);
+            al_draw_bitmap(buffer,0,0,0);
 
-        draw_sprite(cbuffer,buffer,0,0);
-		masked_blit(cardbitmap,cbuffer,(100 * temp) - 100, (145 * temp2) - 145, mouse_x - x, mouse_y - y, 100, 145);
-		draw_sprite(screen,cbuffer,0,0);
+            al_set_target_bitmap(cbuffer);
+            al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
+
+            al_set_target_backbuffer(display);
+            al_draw_bitmap(cbuffer, 0, 0, 0);
+            al_flip_display();
 		
 		}
 
@@ -440,6 +505,8 @@ if (!topcheck){ace[times][i - 1] = cardcur;}
 }
 
 int ace_check(){
+    int mouse_x, mouse_y;
+    al_get_mouse_cursor_position(&mouse_x, &mouse_y);
 
 for (var1 = 0; var1 <= 3; var1++){ 
 	if(mouse_x > acex + (var1 * 121) && mouse_x < acex + 100 + (var1 * 121) && mouse_y > decky && mouse_y < decky + 145){
@@ -452,6 +519,9 @@ return 0;
 }
 
 int top_check(){
+    int mouse_x, mouse_y;
+    al_get_mouse_cursor_position(&mouse_x, &mouse_y);
+
 temp2 = 1;
 temp = cardcur;
 if(temp > 13){temp -= 13; temp2++;}
@@ -531,11 +601,16 @@ newgame = 0;
 
 
 void draw(){
-clear_bitmap(buffer);
+//clear_bitmap(buffer);
 
-   blit(backround,buffer,0,0,0,0,1024,768);
+    al_set_target_bitmap(buffer);
+    al_draw_bitmap(backround,0,0,0);
 
-draw_sprite(buffer,outline,0,0);
+
+//draw_sprite(buffer,outline,0,0);
+
+    al_set_target_bitmap(buffer);
+    al_draw_bitmap(outline,0,0,0);
 
 
 //for (var1 = 0; var1 < 7; var1++){
@@ -568,7 +643,11 @@ draw_sprite(buffer,outline,0,0);
 			if (deck[a][b]){find_deck();}
 
 		}//deck slot parser/draw
-		if (deckcur < decktotal){masked_blit(cardbitmap,buffer, 0, 580, 100, 24, 100, 145);}
+		if (deckcur < decktotal){
+            al_set_target_bitmap(buffer);
+
+            al_draw_bitmap_region(cardbitmap, 0, 580, 100, 145, 24, 100, 0);
+        }
 
 
 
@@ -601,8 +680,10 @@ draw_sprite(buffer,outline,0,0);
 
 
 	if (done == 1){highcolor_fade_out(24); done = 2;}
-	if (done){rectfill(buffer,0,0,screen->w,screen->h,makecol(0,0,0));}
-   blit(buffer,screen,0,0,0,0,1024,768);
+//	if (done){rectfill(buffer,0,0,screen->w,screen->h,makecol(0,0,0));}
+    al_set_target_backbuffer(display);
+    al_draw_bitmap(buffer, 0, 0, 0);
+    al_flip_display();
 }
 
 
@@ -618,7 +699,11 @@ if(temp > 13){temp -= 13; temp2++;}
 if(temp > 13){temp -= 13; temp2++;}
 
 
-if (deckcur != -1){masked_blit(cardbitmap,buffer,(100 * temp) - 100, (145 * temp2) - 145, 250 + (b * 20), y, 100, 145);}
+if (deckcur != -1){
+    al_set_target_bitmap(buffer);
+
+    al_draw_bitmap_region(cardbitmap,(100 * temp) - 100, (145 * temp2) - 145, 100, 145, 250 + (b * 20), y, 0);
+}
 
 }
 
@@ -632,8 +717,11 @@ if(temp > 13){temp -= 13; temp2++;}
 if(temp > 13){temp -= 13; temp2++;}
 if(temp > 13){temp -= 13; temp2++;}
 
-	masked_blit(cardbitmap,buffer,(100 * temp) - 100, (145 * temp2) - 145, x, y + temp3 + (b * 20), 100, 145);
-	textprintf_ex(buffer,font,x,y + temp3,makecol(0,0,0),makecol(250,250,250),"%d",top[a][b]);
+    al_set_target_bitmap(buffer);
+
+    al_draw_bitmap_region(cardbitmap,(100 * temp) - 100, (145 * temp2) - 145, 100, 145, x, y + temp3 + (b * 20), 0);
+
+//	textprintf_ex(buffer,font,x,y + temp3,makecol(0,0,0),makecol(250,250,250),"%d",top[a][b]);
 	
 	
 }
@@ -649,7 +737,9 @@ if(temp > 13){temp -= 13; temp2++;}
 if(temp > 13){temp -= 13; temp2++;}
 if(temp > 13){temp -= 13; temp2++;}
 
-	masked_blit(cardbitmap,buffer,(100 * temp) - 100, (145 * temp2), x + (121 * a), y, 100, 145);
+    al_set_target_bitmap(buffer);
+
+    al_draw_bitmap_region(cardbitmap,(100 * temp) - 100, (145 * temp2), 100, 145, x + (121 * a), y, 0);
 }
 
 
@@ -696,8 +786,13 @@ if(a == 19){botx += 605; boty += 80; if(bottom[19]){botnum[5]++;}}
 if(a == 20){botx += 605; boty += 100; if(bottom[20]){botnum[5]++;}}
 
 
-if (bottom[a] != 0){masked_blit(cardbitmap,buffer, 0, 580, botx, boty, 100, 145);}
-		textprintf_ex(buffer,font,botx,boty,makecol(0,0,0),makecol(250,250,250),"%d",bottom[a]);
+if (bottom[a] != 0){
+    al_set_target_bitmap(buffer);
+
+    al_draw_bitmap_region(cardbitmap, 0, 580, 100, 145, botx, boty, 0);
+
+}
+//		textprintf_ex(buffer,font,botx,boty,makecol(0,0,0),makecol(250,250,250),"%d",bottom[a]);
 
 }
 int bot(int tim){
@@ -707,25 +802,25 @@ return botnum[tim - 1];
 	}
 }
 void highcolor_fade_out(int speed)
-{ 
-    
-     
-        
-            int a;
-                 
-            for (a = 255-speed; a > 0; a-=speed)
-            {
-                clear(bmp_buff);
-                set_trans_blender(0,0,0,a);
-                draw_trans_sprite(bmp_buff, buffer, 0, 0);
-                vsync();
-                blit(bmp_buff, screen, 0,0, 0,0, SCREEN_W, SCREEN_H);
-            }
-            destroy_bitmap(bmp_buff);
-        
-     
+{
 
-    rectfill(screen, 0,0, SCREEN_W,SCREEN_H, makecol(0,0,0));
+
+
+//            int a;
+//
+//            for (a = 255-speed; a > 0; a-=speed)
+//            {
+//                clear(bmp_buff);
+//                set_trans_blender(0,0,0,a);
+//                draw_trans_sprite(bmp_buff, buffer, 0, 0);
+//                vsync();
+//                blit(bmp_buff, screen, 0,0, 0,0, SCREEN_W, SCREEN_H);
+//            }
+//            destroy_bitmap(bmp_buff);
+//
+//
+//
+//    rectfill(screen, 0,0, SCREEN_W,SCREEN_H, makecol(0,0,0));
 }
 
 void is_exit(){
