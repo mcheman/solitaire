@@ -101,7 +101,7 @@ int main ()
 	al_init();
     int a = al_init_image_addon();
     al_install_keyboard();
-	al_install_mouse();
+	a = al_install_mouse();
 //	al_install_timer();
 //	set_color_depth(32);
 //    set_gfx_mode(GFX_AUTODETECT_WINDOWED, SCREEN_W,SCREEN_H,0,0);
@@ -245,7 +245,7 @@ int main ()
 		if (win_conditions() == 1){/*do a wild win screen*/ is_exit();}
 
 
-if (al_key_down(&state, ALLEGRO_KEY_ENTER)){newgame = 1; }
+if (al_key_down(&state, ALLEGRO_KEY_ENTER)){newgame = 1; printf("tt\n"); }
 if (al_key_down(&state, ALLEGRO_KEY_A)){ace[0][12] = 13; ace[1][12] = 26; ace[2][12] = 39; ace[3][12] = 52;}
 
 
@@ -278,9 +278,14 @@ void mouse(){
 
     al_get_mouse_state(&mouse);
 
-    al_get_mouse_cursor_position(&mouse_x, &mouse_y);
+    mouse_x = mouse.x;
+    mouse_y = mouse.y;
 
-	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons & 1 && !pressed){deckcur++; pressed = 1;}
+    if (mouse.buttons) {
+        printf("mouse:%d %d %d\n", mouse.buttons, mouse_x, mouse_y);
+    }
+
+	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons & 1 && !pressed){deckcur++; pressed = 1; printf("aoseuthas\n");}
 	if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons & 2 && !pressed){deckcur--; pressed = 1;}
 	if (!mouse.buttons){pressed = 0;}
 
@@ -337,176 +342,195 @@ if (!acecheck && !topcheck){deck[deckcur][b] = cardcur;}
 
 
 
-//top mouse movement
+    //top mouse movement
 
-for (times = 0; times <= 6; times++){
-    for (a = 0; a < 12; a++){
-		if (!top[times][a]){break;}
-	}
+    for (times = 0; times <= 6; times++){
+        for (a = 0; a < 12; a++){
+            if (!top[times][a]){break;}
+        }
 
-	if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) - 20 + (bot(times) * 20) && mouse_y < topy + (a * 20) + 145 - 20 + (bot(times) * 20) && mouse.buttons){
-	    temp2 = 1;
-		temp = top[times][a - 1];
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-			x = mouse_x - startx - (times * 121);
-			y = mouse_y - topy - (a * 20) + 20 - (bot(times) * 20);
-			cardcur = top[times][a-1];
-			top[times][a - 1] = 0;
-		while (mouse.buttons){
-
-
-
-            al_set_target_bitmap(cbuffer);
-            al_draw_bitmap(buffer,0,0,0);
-
-            al_set_target_bitmap(cbuffer);
-            al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
-
-            al_set_target_backbuffer(display);
-            al_draw_bitmap(cbuffer, 0, 0, 0);
-            al_flip_display();
-		
-		}
-
-i = a;
-acecheck = ace_check();
-topcheck = top_check();
+        if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) - 20 + (bot(times) * 20) && mouse_y < topy + (a * 20) + 145 - 20 + (bot(times) * 20) && mouse.buttons){
+            temp2 = 1;
+            temp = top[times][a - 1];
+            if(temp > 13){temp -= 13; temp2++;}
+            if(temp > 13){temp -= 13; temp2++;}
+            if(temp > 13){temp -= 13; temp2++;}
+            if(temp > 13){temp -= 13; temp2++;}
+                x = mouse_x - startx - (times * 121);
+                y = mouse_y - topy - (a * 20) + 20 - (bot(times) * 20);
+                cardcur = top[times][a-1];
+                top[times][a - 1] = 0;
+            while (mouse.buttons){
 
 
 
-if (!acecheck && !topcheck){top[times][i - 1] = cardcur;}
+                al_set_target_bitmap(cbuffer);
+                al_draw_bitmap(buffer,0,0,0);
+
+                al_set_target_bitmap(cbuffer);
+                al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
+
+                al_set_target_backbuffer(display);
+                al_draw_bitmap(cbuffer, 0, 0, 0);
+                al_flip_display();
+
+            }
+
+            i = a;
+            acecheck = ace_check();
+            topcheck = top_check();
 
 
-	}
-
-}
+            if (!acecheck && !topcheck) { top[times][i - 1] = cardcur; }
 
 
+        }
 
-
-//top mouse movement (its the one that move many cards at once)
-
-for (times = 0; times <= 6; times++){
-    for (var5 = 0; var5 < 12; var5++){
-		if (!top[times][var5]){break;}
-	}
-if (var5 > 1){
-  for (a = 0; a < var5 - 1; a++){
-	if(mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) && mouse_y > topy + (a * 20) + (bot(times) * 20) && mouse_y < topy + (a * 20) + 20 + (bot(times) * 20) && mouse.buttons){
-	        x = mouse_x - startx - (times * 121);
-			y = mouse_y - topy - (a * 20) + 20 - (bot(times) * 20);
-		
-	  for (var6 = a; var6 < var5; var6++){
-		temp2 = 1;
-		temp = top[times][var6];
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-						
-			manycardcur[var6][1] = temp;
-			manycardcur[var6][2] = temp2;
-			manycardcur[var6][0] = top[times][var6];
-			top[times][var6] = 0;
-	  }
-		while (mouse.buttons){
-
-
-            al_set_target_bitmap(cbuffer);
-            al_draw_bitmap(buffer,0,0,0);
-
-
-            al_set_target_bitmap(cbuffer);
-
-		for (var6 = a; var6 < var5 + a; var6++){
-            al_draw_bitmap_region(cardbitmap, (100 * manycardcur[var6][1]) - 100, (145 * manycardcur[var6][2]) - 145, 100, 145, mouse_x - x, mouse_y - y + (var6 * 20) + 20 - (a * 20), 0);
-		}
-//		textprintf_ex(screen,font,100,100,makecol(0,0,0),makecol(250,250,250),"a = %d",manycardcur[0][0]);
-
-            al_set_target_backbuffer(display);
-            al_draw_bitmap(cbuffer, 0, 0, 0);
-            al_flip_display();
-		
-		}
-
-cardcur = manycardcur[0][0];
-topcheck = top_check();
-if (topcheck){
-	for (var6 = 1; var6 < var5; var6++){
-      top[var3][var2 + var6] = manycardcur[var6][0];
-	}
-}
-
-
-if (!topcheck){
-	for (var6 = a; var6 < var5; var6++){
-      top[times][var6] = manycardcur[var6][0];
-	}
-
-}
-
-	  }
-
-	}
-
-  } 
-
-}
+    }
 
 
 
-//ace mouse movement
 
-for (times = 0; times <= 3; times++){
-    for (a = 0; a < 12; a++){
-		if (!ace[times][a]){break;}
-	}
-	if(mouse_x > acex + (times * 121) && mouse_x < acex + 100 + (times * 121) && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons){
-	    temp2 = 1;
-		temp = ace[times][a - 1];
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-		if(temp > 13){temp -= 13; temp2++;}
-			x = mouse_x - acex - (times * 121);
-			y = mouse_y - decky;
-			cardcur = ace[times][a-1];
-			ace[times][a - 1] = 0;
-		while (mouse.buttons){
+    //top mouse movement (its the one that move many cards at once)
+
+    for (times = 0; times <= 6; times++) {
+        for (var5 = 0; var5 < 12; var5++) {
+            if (!top[times][var5]) { break; }
+        }
+        if (var5 > 1) {
+            for (a = 0; a < var5 - 1; a++) {
+                if (mouse_x > startx + (times * 121) && mouse_x < startx + 100 + (times * 121) &&
+                    mouse_y > topy + (a * 20) + (bot(times) * 20) &&
+                    mouse_y < topy + (a * 20) + 20 + (bot(times) * 20) && mouse.buttons) {
+                    x = mouse_x - startx - (times * 121);
+                    y = mouse_y - topy - (a * 20) + 20 - (bot(times) * 20);
+
+                    for (var6 = a; var6 < var5; var6++) {
+                        temp2 = 1;
+                        temp = top[times][var6];
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+
+                        manycardcur[var6][1] = temp;
+                        manycardcur[var6][2] = temp2;
+                        manycardcur[var6][0] = top[times][var6];
+                        top[times][var6] = 0;
+                    }
+                    while (mouse.buttons) {
 
 
-            al_set_target_bitmap(cbuffer);
-            al_draw_bitmap(buffer,0,0,0);
-
-            al_set_target_bitmap(cbuffer);
-            al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
-
-            al_set_target_backbuffer(display);
-            al_draw_bitmap(cbuffer, 0, 0, 0);
-            al_flip_display();
-		
-		}
-
-i = a;
-topcheck = top_check();
+                        al_set_target_bitmap(cbuffer);
+                        al_draw_bitmap(buffer, 0, 0, 0);
 
 
+                        al_set_target_bitmap(cbuffer);
 
-if (!topcheck){ace[times][i - 1] = cardcur;}
+                        for (var6 = a; var6 < var5 + a; var6++) {
+                            al_draw_bitmap_region(cardbitmap, (100 * manycardcur[var6][1]) - 100,
+                                                  (145 * manycardcur[var6][2]) - 145, 100, 145, mouse_x - x,
+                                                  mouse_y - y + (var6 * 20) + 20 - (a * 20), 0);
+                        }
+                        //		textprintf_ex(screen,font,100,100,makecol(0,0,0),makecol(250,250,250),"a = %d",manycardcur[0][0]);
+
+                        al_set_target_backbuffer(display);
+                        al_draw_bitmap(cbuffer, 0, 0, 0);
+                        al_flip_display();
+
+                    }
+
+                    cardcur = manycardcur[0][0];
+                    topcheck = top_check();
+                    if (topcheck) {
+                        for (var6 = 1; var6 < var5; var6++) {
+                            top[var3][var2 + var6] = manycardcur[var6][0];
+                        }
+                    }
 
 
-	}
+                    if (!topcheck) {
+                        for (var6 = a; var6 < var5; var6++) {
+                            top[times][var6] = manycardcur[var6][0];
+                        }
 
-}
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+
+    //ace mouse movement
+
+    for (times = 0; times <= 3; times++){
+        for (a = 0; a < 12; a++){
+            if (!ace[times][a]){break;}
+        }
+        if(mouse_x > acex + (times * 121) && mouse_x < acex + 100 + (times * 121) && mouse_y > decky && mouse_y < decky + 145 && mouse.buttons){
+            temp2 = 1;
+            temp = ace[times][a - 1];
+            if(temp > 13){temp -= 13; temp2++;}
+            if(temp > 13){temp -= 13; temp2++;}
+            if(temp > 13){temp -= 13; temp2++;}
+            if(temp > 13){temp -= 13; temp2++;}
+                x = mouse_x - acex - (times * 121);
+                y = mouse_y - decky;
+                cardcur = ace[times][a-1];
+                ace[times][a - 1] = 0;
+            while (mouse.buttons){
+
+
+                al_set_target_bitmap(cbuffer);
+                al_draw_bitmap(buffer,0,0,0);
+
+                al_set_target_bitmap(cbuffer);
+                al_draw_bitmap_region(cardbitmap, (100 * temp) - 100, (145 * temp2) - 145, 100, 145, mouse_x - x, mouse_y - y, 0);
+
+                al_set_target_backbuffer(display);
+                al_draw_bitmap(cbuffer, 0, 0, 0);
+                al_flip_display();
+
+            }
+
+            i = a;
+            topcheck = top_check();
+
+
+
+            if (!topcheck){ace[times][i - 1] = cardcur;}
+
+
+        }
+
+    }
 
 }
 
 int ace_check(){
     int mouse_x, mouse_y;
-    al_get_mouse_cursor_position(&mouse_x, &mouse_y);
+
+    ALLEGRO_MOUSE_STATE mouse;
+    al_get_mouse_state(&mouse);
+    mouse_x = mouse.x;
+    mouse_y = mouse.y;
 
 for (var1 = 0; var1 <= 3; var1++){ 
 	if(mouse_x > acex + (var1 * 121) && mouse_x < acex + 100 + (var1 * 121) && mouse_y > decky && mouse_y < decky + 145){
@@ -520,39 +544,41 @@ return 0;
 
 int top_check(){
     int mouse_x, mouse_y;
-    al_get_mouse_cursor_position(&mouse_x, &mouse_y);
+    ALLEGRO_MOUSE_STATE mouse;
+    al_get_mouse_state(&mouse);
+    mouse_x = mouse.x;
+    mouse_y = mouse.y;
 
-temp2 = 1;
-temp = cardcur;
-if(temp > 13){temp -= 13; temp2++;}
-if(temp > 13){temp -= 13; temp2++;}
-if(temp > 13){temp -= 13; temp2++;}
-if(temp > 13){temp -= 13; temp2++;}
+    temp2 = 1;
+    temp = cardcur;
+    if(temp > 13){temp -= 13; temp2++;}
+    if(temp > 13){temp -= 13; temp2++;}
+    if(temp > 13){temp -= 13; temp2++;}
+    if(temp > 13){temp -= 13; temp2++;}
 
-for (var3 = 0; var3 <= 6; var3++){
+    for (var3 = 0; var3 <= 6; var3++){
 
-	for (var1 = 0; var1 < 13; var1++){
-		if (!top[var3][var1]){break;}
-	}
+        for (var1 = 0; var1 < 13; var1++){
+            if (!top[var3][var1]){break;}
+        }
 
 
-    if(mouse_x > startx + (var3 * 121) && mouse_x < startx + 100 + (var3 * 121) && mouse_y > topy + (var1 * 20) - 20 + (bot(var3) * 20) && mouse_y < topy + (var1 * 20) + 145 - 20 + (bot(var3) * 20)){
-		for (var2 = 0; var2 <= 13; var2++){
-			if (!top[var3][var2] && can_move(cardcur,top[var3][var2-1])){top[var3][var2] = cardcur; cardcur = 0;return 1;}
-		}
-	}
-}
+        if(mouse_x > startx + (var3 * 121) && mouse_x < startx + 100 + (var3 * 121) && mouse_y > topy + (var1 * 20) - 20 + (bot(var3) * 20) && mouse_y < topy + (var1 * 20) + 145 - 20 + (bot(var3) * 20)){
+            for (var2 = 0; var2 <= 13; var2++){
+                if (!top[var3][var2] && can_move(cardcur,top[var3][var2-1])){top[var3][var2] = cardcur; cardcur = 0;return 1;}
+            }
+        }
+    }
 return 0;
 }
 
 
+void setup() {
 
+    for (var1 = 0; var1 <= 52; var1++) {
+        cards[var1] = var1 + 1;
+    }
 
-void setup(){
-
-	for (var1 = 0; var1 <= 52; var1++){
-          cards[var1] = var1 + 1; 	}
-		
 //
 //	for (var1 = 0; var1 < 52; var1++){
 //textprintf_ex(screen,font,100,10 * var1,makecol(0,0,0),makecol(250,250,250),"card = %d , %d",cards[var1], var1);
@@ -560,38 +586,33 @@ void setup(){
 //clear_keybuf();
 //	while(!keypressed()){}
 
+    for (i = 0; i < 52; i++) {
+        j = rand() % 52;
+        k = cards[i];
+        cards[i] = cards[j];
+        cards[j] = k;
+    }
 
 
+    for (var1 = 0; var1 < 7; var1++) {
+        top[var1][0] = cards[var1];
+    }//sets cards on top
 
-	
-
-	for (i = 0; i < 52; i++) {
-		j = rand() % 52;
-		k = cards[i];
-		cards[i] = cards[j];
-		cards[j] = k;
-	}
-
-
-	for (var1 = 0; var1 < 7; var1++){
-     top[var1][0] = cards[var1];
-	}//sets cards on top
-
-	for (var1 = 0; var1 < 21; var1++){
-     bottom[var1] = cards[var1 + 7];
-	}//sets cards on bottom
+    for (var1 = 0; var1 < 21; var1++) {
+        bottom[var1] = cards[var1 + 7];
+    }//sets cards on bottom
 
     var3 = 29;
-    for (var1 = 0; var1 < 8; var1++){
-		  for (var2 = 0; var2 < 3; var2++){
-     deck[var1][var2] = cards[var3];
-	 var3++;
-		  }
-	}//sets cards in deck
-		
+    for (var1 = 0; var1 < 8; var1++) {
+        for (var2 = 0; var2 < 3; var2++) {
+            deck[var1][var2] = cards[var3];
+            var3++;
+        }
+    }//sets cards in deck
 
 
-newgame = 0;
+
+    newgame = 0;
 }
 
 
