@@ -5,7 +5,6 @@
 #include <time.h>
 
 //also need to solve problem of two cards on screen at once w/ mouse select
-// todo bug: cardspace is 30 but is drawn at like 25 or something
 
 //1 | 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13 clubs
 //14|15|16|17|18|19|20|21|22|23|24|25|26 diamonds
@@ -893,20 +892,6 @@ void draw(){
         }
     }
 
-//    botx = startx + 170;
-//    boty = 224;
-//
-//    if(a == 0){if(bottom[0]){botnum[0] = 1;}}
-//
-//    if(a == 1){botx += 170; if(bottom[1]){botnum[1]++;}}
-//    if(a == 2){botx += 170; if(bottom[2]){boty += (cardspace - 10); botnum[1]++;}}
-//
-//
-//    if(a == 3){botx += 340; if(bottom[3]){botnum[2]++;}}
-//    if(a == 4){botx += 340; boty += (cardspace - 10); if(bottom[4]){botnum[2]++;}}
-//    if(a == 5){botx += 340; boty += (cardspace - 10) * 2; if(bottom[5]){botnum[2]++;}}
-
-
 
     x = 161;
     for (a = 0; a < 7; a++){
@@ -988,6 +973,9 @@ void find_ace(){
 }
 
 
+/**
+ * Calculates the botnum array from the values in bottom
+ */
 void find_bottom(){
 
     int pile_bottom_max = -1; // first does not have bottom
@@ -1002,55 +990,6 @@ void find_bottom(){
 
         pile_bottom_max += pile + 1; // next pile has more cards in it. increment index by amount of cards
     }
-
-
-
-
-
-
-
-
-
-//    temp2 = 0;
-//    temp = bottom[a];
-//    if(temp > 13){temp -= 13; temp2++;}
-//    if(temp > 13){temp -= 13; temp2++;}
-//    if(temp > 13){temp -= 13; temp2++;}
-//    if(temp > 13){temp -= 13; temp2++;}
-//
-//
-//
-//
-//    botx = startx + 170;
-//    boty = 224;
-//
-//    if(a == 0){if(bottom[0]){botnum[0] = 1;}}
-//
-//    if(a == 1){botx += 170; if(bottom[1]){botnum[1]++;}}
-//    if(a == 2){botx += 170; if(bottom[2]){boty += (cardspace - 10); botnum[1]++;}}
-//
-//
-//    if(a == 3){botx += 340; if(bottom[3]){botnum[2]++;}}
-//    if(a == 4){botx += 340; boty += (cardspace - 10); if(bottom[4]){botnum[2]++;}}
-//    if(a == 5){botx += 340; boty += (cardspace - 10) * 2; if(bottom[5]){botnum[2]++;}}
-//
-//    if(a == 6){botx += 510; if(bottom[6]){botnum[3]++;}}
-//    if(a == 7){botx += 510; boty += (cardspace - 10); if(bottom[7]){botnum[3]++;}}
-//    if(a == 8){botx += 510; boty += (cardspace - 10) * 2; if(bottom[8]){botnum[3]++;}}
-//    if(a == 9){botx += 510; boty += (cardspace - 10) * 3; if(bottom[9]){botnum[3]++;}}
-//
-//    if(a == 10){botx += 680; if(bottom[10]){botnum[4]++;}}
-//    if(a == 11){botx += 680; boty += (cardspace - 10); if(bottom[11]){botnum[4]++;}}
-//    if(a == 12){botx += 680; boty += (cardspace - 10) * 2; if(bottom[12]){botnum[4]++;}}
-//    if(a == 13){botx += 680; boty += (cardspace - 10) * 3; if(bottom[13]){botnum[4]++;}}
-//    if(a == 14){botx += 680; boty += (cardspace - 10) * 4; if(bottom[14]){botnum[4]++;}}
-//
-//    if(a == 15){botx += 850; if(bottom[15]){botnum[5]++;}}
-//    if(a == 16){botx += 850; boty += (cardspace - 10); if(bottom[16]){botnum[5]++;}}
-//    if(a == 17){botx += 850; boty += (cardspace - 10) * 2; if(bottom[17]){botnum[5]++;}}
-//    if(a == 18){botx += 850; boty += (cardspace - 10) * 3; if(bottom[18]){botnum[5]++;}}
-//    if(a == 19){botx += 850; boty += (cardspace - 10) * 4; if(bottom[19]){botnum[5]++;}}
-//    if(a == 20){botx += 850; boty += (cardspace - 10) * 5; if(bottom[20]){botnum[5]++;}}
 }
 
 /**
