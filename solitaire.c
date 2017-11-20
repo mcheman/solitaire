@@ -5,6 +5,7 @@
 #include <time.h>
 
 //also need to solve problem of two cards on screen at once w/ mouse select
+// todo bug: cardspace is 30 but is drawn at like 25 or something
 
 //1 | 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13 clubs
 //14|15|16|17|18|19|20|21|22|23|24|25|26 diamonds
@@ -23,9 +24,8 @@ ALLEGRO_BITMAP * buffer;
 ALLEGRO_BITMAP * outline;
 ALLEGRO_BITMAP * cardbitmap1;
 ALLEGRO_BITMAP * cardbitmap2;
-ALLEGRO_BITMAP * cursor;
 ALLEGRO_BITMAP * cbuffer;
-ALLEGRO_BITMAP *bmp_buff;
+ALLEGRO_BITMAP * bmp_buff;
 
 ALLEGRO_DISPLAY * display;
 ALLEGRO_KEYBOARD_STATE state;
@@ -35,7 +35,6 @@ ALLEGRO_EVENT_QUEUE * event_queue;
 //SAMPLE * cardflip;
 
 FILE *fp;
-FILE *dumpfile;
 
 
 
@@ -45,14 +44,13 @@ int cardspace = 30;
 
 int x,y,a,b;
 int botx,boty;
-int botnum[6];
+int botnum[6]; // array of number of cards on the bottom of each pile. skips first pile since it's always zero.
 
 int done = 0;
 int newgame = 1;
 
 int cardsizey = 145;
 
-int scanint;
 int returnyes = 0;
 int undocur;
 int undonumber = 0;
@@ -65,7 +63,7 @@ int deckcur = -1;
 int decktotal = 7;
 int top[7][13];
 int ace[4][13];
-int bottom[22];
+int bottom[22]; // only first 20 are actually used
 int cards[52];
 int temp;
 int temp2;
@@ -75,12 +73,6 @@ int suit1 ,suit2;
 int manycardcur[13][3];
 int lose,win;
 int scanit;
-
-
-int floater;
-
-int finished = 0;
-int used;
 
 int cardset = 1;
 int i, j, k;
@@ -92,7 +84,6 @@ void find_top();
 void find_bottom();
 void find_ace();
 int mouse();
-void is_exit();
 void highcolor_fade_out(int speed);
 int ace_check();
 int top_check();
@@ -100,9 +91,8 @@ int bot(int tim);
 int can_move(int cardstart, int cardfinish);
 int can_ace_move(int cardstart, int cardfinish);
 int win_conditions();
-void dump();
 void flip_bottom();
-//void highcolor_fade_in(BITMAP *bmp_orig, int speed ,int highx, int highy);
+int collides(int x, int y, int box_x, int box_y, int box_w, int box_h);
 
 #define SCREEN_W 1440
 #define SCREEN_H 900
@@ -114,10 +104,6 @@ int main (void)
     al_init_image_addon();
     al_install_keyboard();
     al_install_mouse();
-//	al_install_timer();
-//	set_color_depth(32);
-//    install_sound(DIGI_AUTODETECT,MIDI_NONE,0);
-//    set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1440,900,0,0);
     display = al_create_display(SCREEN_W, SCREEN_H);
     event_queue = al_create_event_queue();
     al_register_event_source(event_queue, al_get_display_event_source(display));
@@ -133,7 +119,6 @@ int main (void)
     cbuffer = al_create_bitmap(SCREEN_W,SCREEN_H);
     cardbitmap1 = al_load_bitmap("cards1.bmp");
     cardbitmap2 = al_load_bitmap("cards22.bmp");
-    cursor = al_load_bitmap("cursor.bmp");
 
     al_convert_mask_to_alpha(outline, al_map_rgb(255, 0, 255));
     al_convert_mask_to_alpha(cardbitmap1, al_map_rgb(255, 0, 255));
@@ -142,13 +127,8 @@ int main (void)
 //    wrong = load_sample("wong.wav");
 //    cardflip = load_sample("cardflip.wav");
 
-//    set_mouse_sprite(cursor);
-//    show_mouse(screen);
 
     al_set_system_mouse_cursor(display, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-
-//    enable_hardware_cursor();
-//    set_close_button_callback(is_exit);
 
     while (1){
         scanit = fgetc(fp);
@@ -182,7 +162,6 @@ int main (void)
 
         //if (key[KEY_1]){set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1440,900,0,0);show_mouse(screen);}
         //  if (key[KEY_2]){set_gfx_mode(GFX_AUTODETECT_FULLSCREEN, 1680,1050,0,0);show_mouse(screen);}
-//        if (key[KEY_ESC] || (key[KEY_ALT] && key[KEY_F4])){is_exit();}
 
 
         if (deckcur == -1){
@@ -203,7 +182,6 @@ int main (void)
 
 
 
-        if (al_key_down(&state, ALLEGRO_KEY_D)){dump();}
         if (al_key_down(&state, ALLEGRO_KEY_2)){cardsizey = 155; cardset = 2;}
         if (al_key_down(&state, ALLEGRO_KEY_3)){cardsizey = 145; cardset = 1;}
 
@@ -397,6 +375,8 @@ int mouse(){
     
     returnyes = 0;
 
+    // draw card from deck section
+
     if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + cardsizey && mouse.buttons & 1 && !pressed){
         deckcur++;
         pressed = 1;
@@ -545,30 +525,47 @@ int mouse(){
 
 //top mouse movement (its the one that move many cards at once)
 
-    for (times = 0; times <= 6; times++){
-        for (var5 = 0; var5 < 12; var5++){
-            if (!top[times][var5]){break;}
+    // times == piles
+    // var5 == first_empty
+
+    for (times = 0; times <= 6; times++) {
+        for (var5 = 0; var5 < 12; var5++) {
+            if (!top[times][var5]) { break; }
         }
-        if (var5 > 1){
-            for (a = 0; a < var5 - 1; a++){
-                if(mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) && mouse_y > topy + (a * cardspace) + (bot(times) * (cardspace - 10)) && mouse_y < topy + (a * cardspace) + cardspace + (bot(times) * (cardspace - 10)) && mouse.buttons){
+        if (var5 > 1) { // if there is more than one card in the pile
+            for (a = 0; a < var5 - 1; a++) { // for each card in the stack
+                if (mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) &&
+                    mouse_y > topy + (a * cardspace) + (bot(times) * (cardspace - 10)) &&
+                    mouse_y < topy + (a * cardspace) + cardspace + (bot(times) * (cardspace - 10)) && mouse.buttons) {
                     x = mouse_x - startx - (times * 170);
                     y = mouse_y - topy - (a * cardspace) + cardspace - (bot(times) * (cardspace - 10));
 
-                    for (var6 = a; var6 < var5; var6++){
+                    for (var6 = a; var6 < var5; var6++) {
                         temp2 = 1;
                         temp = top[times][var6];
-                        if(temp > 13){temp -= 13; temp2++;}
-                        if(temp > 13){temp -= 13; temp2++;}
-                        if(temp > 13){temp -= 13; temp2++;}
-                        if(temp > 13){temp -= 13; temp2++;}
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
+                        if (temp > 13) {
+                            temp -= 13;
+                            temp2++;
+                        }
 
                         manycardcur[var6][1] = temp;
                         manycardcur[var6][2] = temp2;
                         manycardcur[var6][0] = top[times][var6];
                         top[times][var6] = 0;
                     }
-                    while (mouse.buttons){
+                    while (mouse.buttons) {
                         al_get_mouse_state(&mouse);
                         mouse_x = mouse.x;
                         mouse_y = mouse.y;
@@ -577,15 +574,23 @@ int mouse(){
 //                        if (key[KEY_D]){dump();}
 
                         al_set_target_bitmap(cbuffer);
-                        al_draw_bitmap(buffer,0,0,0);
+                        al_draw_bitmap(buffer, 0, 0, 0);
 
 //                        draw_sprite(cbuffer,buffer,0,0);
-                        for (var6 = a; var6 < var5 + a; var6++){
+                        for (var6 = a; var6 < var5 + a; var6++) {
 
                             if (cardset == 1) {
-                                al_draw_bitmap_region(cardbitmap1, (100 * manycardcur[var6][1]) - 100, (cardsizey * manycardcur[var6][2]) - cardsizey, 100, cardsizey, mouse_x - x, mouse_y - y + (var6 * cardspace) + cardspace - (a * cardspace), 0);
+                                al_draw_bitmap_region(cardbitmap1, (100 * manycardcur[var6][1]) - 100,
+                                                      (cardsizey * manycardcur[var6][2]) - cardsizey, 100, cardsizey,
+                                                      mouse_x - x,
+                                                      mouse_y - y + (var6 * cardspace) + cardspace - (a * cardspace),
+                                                      0);
                             } else if (cardset == 2) {
-                                al_draw_bitmap_region(cardbitmap2, (100 * manycardcur[var6][1]) - 100, (cardsizey * manycardcur[var6][2]) - cardsizey, 100, cardsizey, mouse_x - x, mouse_y - y + (var6 * cardspace) + cardspace - (a * cardspace), 0);
+                                al_draw_bitmap_region(cardbitmap2, (100 * manycardcur[var6][1]) - 100,
+                                                      (cardsizey * manycardcur[var6][2]) - cardsizey, 100, cardsizey,
+                                                      mouse_x - x,
+                                                      mouse_y - y + (var6 * cardspace) + cardspace - (a * cardspace),
+                                                      0);
                             }
 
 //                            if (cardset == 1){masked_blit(cardbitmap1,cbuffer,(100 * manycardcur[var6][1]) - 100, (cardsizey * manycardcur[var6][2]) - cardsizey, mouse_x - x, mouse_y - y + (var6 * cardspace) + cardspace - (a * cardspace), 100, cardsizey);}
@@ -602,16 +607,16 @@ int mouse(){
 
                     cardcur = manycardcur[0][0];
                     topcheck = top_check();
-                    if (topcheck){
-                        for (var6 = 1; var6 < var5; var6++){
+                    if (topcheck) {
+                        for (var6 = 1; var6 < var5; var6++) {
                             top[var3][var2 + var6] = manycardcur[var6][0];
                         }
                         returnyes = 1;
                     }
 
 
-                    if (!topcheck){
-                        for (var6 = a; var6 < var5; var6++){
+                    if (!topcheck) {
+                        for (var6 = a; var6 < var5; var6++) {
                             top[times][var6] = manycardcur[var6][0];
                         }
 //                        play_sample(wrong, 250, 128, 1000, 0);
@@ -624,8 +629,8 @@ int mouse(){
         }
 
     }
-    for (var6 = 0; var6 <= 12; var6++){
-        for (var5 = 0; var5 <= 2; var5++){
+    for (var6 = 0; var6 <= 12; var6++) {
+        for (var5 = 0; var5 <= 2; var5++) {
             manycardcur[var6][var5] = 0;
         }
     }
@@ -700,7 +705,14 @@ int ace_check(){
     for (var1 = 0; var1 <= 3; var1++){
         if(mouse_x > acex + (var1 * 170) && mouse_x < acex + 100 + (var1 * 170) && mouse_y > decky && mouse_y < decky + cardsizey){
             for (var2 = 0; var2 <= 13; var2++){
-                if (!ace[var1][var2] && can_ace_move(cardcur, ace[var1][var2 - 1])){ace[var1][var2] = cardcur; cardcur = 0; return 1;}
+
+                int ace_to_empty = ace[var1][0] == 0 && ((cardcur - 1) % 13) == 0;
+
+                if (!ace[var1][var2] && (ace_to_empty || can_ace_move(cardcur, ace[var1][var2 - 1]))) {
+                    ace[var1][var2] = cardcur;
+                    cardcur = 0;
+                    return 1;
+                }
             }
         }
     }
@@ -722,22 +734,60 @@ int top_check(){
     if(temp > 13){temp -= 13; temp2++;}
     if(temp > 13){temp -= 13; temp2++;}
 
-    for (var3 = 0; var3 <= 6; var3++){
+    int pile;
+    for (pile = 0; pile < 7; pile++){
 
-        for (var1 = 0; var1 < 13; var1++){
-            if (!top[var3][var1]){break;}
+        int first_empty;
+        for (first_empty = 0; first_empty < 13; first_empty++) {
+            if (!top[pile][first_empty]){break;}
         }
 
+        int top_cards = first_empty > 0 ? first_empty - 1 : 0;
 
-        if(mouse_x > startx + (var3 * 170) && mouse_x < startx + 100 + (var3 * 170) && mouse_y > topy + (var1 * cardspace) - cardspace + (bot(var3) * cardspace) && mouse_y < topy + (var1 * cardspace) + cardsizey - cardspace + (bot(var3) * cardspace)){
-            for (var2 = 0; var2 <= 13; var2++){
-                if (!top[var3][var2] && can_move(cardcur,top[var3][var2-1])){top[var3][var2] = cardcur; cardcur = 0;return 1;}
+
+        int card_x = startx + (pile * 170);
+        int card_y = topy + (top_cards + bot(pile))  * cardspace;
+        int card_w = 100;
+        int card_h = cardsizey;
+
+
+//        if (mouse_x > startx + (pile * 170) &&
+//            mouse_x < startx + 100 + (pile * 170) &&
+//            mouse_y > topy + (first_empty * cardspace) - cardspace + (bot(pile) * cardspace) &&
+//            mouse_y < topy + (first_empty * cardspace) + cardsizey - cardspace + (bot(pile) * cardspace)) {
+        if (collides(mouse_x, mouse_y, card_x, card_y, card_w, card_h)) {
+            printf("collides! %d top_cards: %d %d\n", bot(pile), top_cards, cardspace);
+            for (var2 = 0; var2 <= 13; var2++) {
+
+                int king_to_empty = (cardcur - 1) % 13 == 12 && top[pile][0] == 0;
+
+                if (!top[pile][var2] && (can_move(cardcur, top[pile][var2 - 1]) || king_to_empty)) {
+                    printf("Moving card %d to top[%d][%d]\n", cardcur, pile, var2);
+                    top[pile][var2] = cardcur;
+                    cardcur = 0;
+                    var3 = pile;
+                    var1 = first_empty;
+                    return 1;
+                }
             }
         }
     }
     return 0;
 }
 
+/**
+ * Returns whether the x,y position is within the box
+ * @param x
+ * @param y
+ * @param box_x
+ * @param box_y
+ * @param box_w
+ * @param box_h
+ * @return bool
+ */
+int collides(int x, int y, int box_x, int box_y, int box_w, int box_h) {
+    return x > box_x && x < box_x + box_w && y > box_y && y < box_y + box_h;
+}
 
 
 
@@ -766,27 +816,9 @@ void setup(){
 
 
 
-
-
-
-
-
-
-
-
-
     for (var1 = 0; var1 <= 52; var1++){
-        cards[var1] = var1 + 1; 	}
-
-//
-//	for (var1 = 0; var1 < 52; var1++){
-//textprintf_ex(screen,font,100,10 * var1,makecol(0,0,0),makecol(250,250,250),"card = %d , %d",cards[var1], var1);
-//}
-//clear_keybuf();
-//	while(!keypressed()){}
-
-
-
+        cards[var1] = var1 + 1;
+    }
 
 
 
@@ -815,47 +847,18 @@ void setup(){
     }//sets cards in deck
 
 
-
     newgame = 0;
 }
 
 
 
 
-
-
-
 void draw(){
-//    clear_bitmap(buffer);
-
-//    blit(backround,buffer,0,0,0,0,SCREEN_W,SCREEN_H);
-//
-//    draw_sprite(buffer,outline,0,0);
-
-
     al_set_target_bitmap(buffer);
     al_draw_bitmap(backround,0,0,0);
 
     al_set_target_bitmap(buffer);
     al_draw_bitmap(outline,0,0,0);
-
-
-//for (var1 = 0; var1 < 7; var1++){
-//textprintf_ex(buffer,font,40 * var1,640,makecol(200,255,255),-1,"%d",top[var1][1]);
-//}
-//
-//for (var1 = 0; var1 < 21; var1++){
-//textprintf_ex(buffer,font,40 * var1,670,makecol(200,255,255),-1,"%d",bottom[var1]);
-//}
-//
-//for (var1 = 0; var1 < 8; var1++){
-//	for (var2 = 0; var2 < 3; var2++){
-//textprintf_ex(buffer,font,40 * var1,700 + (var2 * 20),makecol(200,255,255),-1,"%d",deck[var1][var2]);
-//	}}
-
-
-
-
 
     for (a = 0; a <= 3; a++){
 
@@ -875,9 +878,6 @@ void draw(){
         if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, startx, 24, 0);}
         if (cardset == 2){al_draw_bitmap_region(cardbitmap2, 0, cardsizey * 4, 100, cardsizey, startx, 24, 0);}
     }
-
-
-
 
 
     for (i = 0; i < 6; i++){botnum[i] = 0;}
@@ -900,25 +900,13 @@ void draw(){
         x += 170;
     }//top slot parser/draw
 
-    if (!win && !lose){floater = 100;}
-    if (lose == 1 && win == 0){floater = 0;}
-    if (win == 1 && lose == 0){floater = 100;}
-    if (win && lose){floater = win * 100 / (win + lose) ;}
-//    textprintf_ex(buffer,font,1285,858,makecol(200,200,200),-1,"Games Won       %d",win);
-//    textprintf_ex(buffer,font,1285,869,makecol(200,200,200),-1,"Games Lost      %d",lose);
-//    textprintf_ex(buffer,font,1285,880,makecol(200,200,200),-1,"Win Percentage  %d",floater);
-
-
     if (done == 1){
-//        highcolor_fade_out(24);
         done = 2;
     }
-//    if (done){rectfill(buffer,0,0,screen->w,screen->h,makecol(0,0,0));}
-//    blit(buffer,screen,0,0,0,0,SCREEN_W,SCREEN_H);
+
     al_set_target_backbuffer(display);
     al_draw_bitmap(buffer, 0, 0, 0);
     al_flip_display();
-
 }
 
 
@@ -1028,375 +1016,113 @@ void find_bottom(){
         al_set_target_bitmap(buffer);
         if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, botx, boty, 0);}
         if (cardset == 2){al_draw_bitmap_region(cardbitmap2, 0, cardsizey * 4, 100, cardsizey, botx, boty, 0);}
-
-
-    }
-    //textprintf_ex(buffer,font,botx,boty,makecol(0,0,0),makecol(250,250,250),"%d",bottom[a]);
-
-}
-int bot(int tim){
-    if (tim == 0){return 0;}
-    else{
-        return botnum[tim - 1];
     }
 }
-//void highcolor_fade_out(int speed)
-//{
-//
-//    clear_keybuf();
-//
-//    int a;
-//
-//    for (a = 255-speed; a > 0; a-=speed)
-//    {
-//        clear(bmp_buff);
-//        set_trans_blender(0,0,0,a);
-//        draw_trans_sprite(bmp_buff, buffer, 0, 0);
-//        vsync();
-//        if (done == 3){textprintf_ex(bmp_buff,font,SCREEN_W / 2 - 29,SCREEN_H / 2,makecol(250,250,250),-1,"You Have Won");}
-//        blit(bmp_buff, screen, 0,0, 0,0, SCREEN_W, SCREEN_H);
-//        if (keypressed()){break;}
-//    }
-//    destroy_bitmap(bmp_buff);
-//
-//
-//
-//    rectfill(screen, 0,0, SCREEN_W,SCREEN_H, makecol(0,0,0));
-//}
 
-void is_exit(){
-
-    fprintf(fp,"0");
-    done = 1;
-
-
-
-
-}
-int can_move(int cardstart, int cardfinish){
-    suit1 = 1;
-    cardnumber1 = cardstart;
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-
-
-    if (!top[var3][0] && cardnumber1 == 13){return 1;}
-
-    suit2 = 1;
-    cardnumber2 = cardfinish;
-    if(cardnumber2 > 13){cardnumber2 -= 13; suit2++;}
-    if(cardnumber2 > 13){cardnumber2 -= 13; suit2++;}
-    if(cardnumber2 > 13){cardnumber2 -= 13; suit2++;}
-
-
-    if (suit1 == 1 && (suit2 == 2 || suit2 == 3) && cardnumber1 + 1 == cardnumber2){return 1;}
-
-    if (suit1 == 2 && (suit2 == 1 || suit2 == 4) && cardnumber1 + 1 == cardnumber2){return 1;}
-
-    if (suit1 == 3 && (suit2 == 1 || suit2 == 4) && cardnumber1 + 1 == cardnumber2){return 1;}
-
-    if (suit1 == 4 && (suit2 == 2 || suit2 == 3) && cardnumber1 + 1 == cardnumber2){return 1;}
-
-
-    return 0;
+/**
+ * Get number of cards on the bottom pile for a particular pile
+ *
+ * @param pile the pile to check
+ * @return number of cards in the pile
+ */
+int bot(int pile) {
+    if (pile == 0) {
+        return 0;
+    } else {
+        return botnum[pile - 1];
+    }
 }
 
-int can_ace_move(int cardstart, int cardfinish){
-    suit1 = 1;
-    cardnumber1 = cardstart;
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
+/**
+ * Returns whether the source card can be moved onto the dest card
+ *
+ * @param source card
+ * @param dest card
+ * @return bool
+ */
+int can_move(int source, int dest){
 
-    if (ace[var1][0] == 0 && cardnumber1 == 1){return 1;}
+    //cards are ones based. convert to zero based
+    source = source - 1;
+    dest = dest - 1;
 
-    suit2 = 1;
-    cardnumber2 = cardfinish;
-    if(cardnumber2 > 13){cardnumber2 -= 13; suit2++;}
-    if(cardnumber2 > 13){cardnumber2 -= 13; suit2++;}
-    if(cardnumber2 > 13){cardnumber2 -= 13; suit2++;}
+    int source_suit = source / 13;
+    int source_card = source % 13;
+    int dest_suit = dest / 13;
+    int dest_card = dest % 13;
 
+    int is_source_black = source_suit == 0 || source_suit == 3;
+    int is_dest_black = dest_suit == 0 || dest_suit == 3;
 
+    int suits_same_color = is_source_black == is_dest_black;
+    int card_lower = source_card + 1 == dest_card;
 
-    if (suit1 == suit2 && cardnumber2 + 1 == cardnumber1){return 1;}
-    return 0;
+    return !suits_same_color && card_lower;
 }
+
+/**
+ * Returns whether the source card can be moved onto the dest card if the dest card is in the aces pile
+ *
+ * @param source
+ * @param dest
+ * @return bool
+ */
+int can_ace_move(int source, int dest){
+
+    //cards are ones based. convert to zero based
+    source = source - 1;
+    dest = dest - 1;
+
+    int source_suit = source / 13;
+    int source_card = source % 13;
+    int dest_suit = dest / 13;
+    int dest_card = dest % 13;
+
+    int card_higher = source_card - 1 == dest_card;
+
+    return source_suit == dest_suit && card_higher;
+}
+
+/**
+ * Returns whether the game has been won
+ *
+ * @return bool
+ */
 int win_conditions(){
-    int yeswin = 0;
-    suit1 = 1;
-    cardnumber1 = ace[0][12];
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-
-    if(cardnumber1 == 13){yeswin++;}
-
-    suit1 = 1;
-    cardnumber1 = ace[1][12];
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-
-    if(cardnumber1 == 13){yeswin++;}
-
-    suit1 = 1;
-    cardnumber1 = ace[2][12];
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-
-    if(cardnumber1 == 13){yeswin++;}
-
-    suit1 = 1;
-    cardnumber1 = ace[3][12];
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-    if(cardnumber1 > 13){cardnumber1 -= 13; suit1++;}
-
-    if(cardnumber1 == 13){yeswin++;}
-
-    if (yeswin == 4){return 1;}
-    else {return 0;}
-
-}
-
-
-
-void dump(){
-
-    int itter1,itter2;
-
-    dumpfile = fopen("dump.txt","w");
-    fprintf(dumpfile,"int var1 = %d,var2 = %d,var3 = %d,var4 = %d,var5 = %d,var6 = %d,var7 = %d,var8 = %d,var9 = %d;\n",var1,var2,var3,var4,var5,var6,var7,var8,var9);
-
-
-
-    fprintf(dumpfile,"int x = %d,y = %d,a = %d,b = %d;\n",x,y,a,b);
-    fprintf(dumpfile,"int botx = %d,boty = %d;\n",botx,boty);
-
-    fprintf(dumpfile,"int botnum[0] = %d , botnum[1] = %d ,botnum[2] = %d ,botnum[3] = %d ,botnum[4] = %d ,botnum[5] = %d\n",botnum[0],botnum[1],botnum[2],botnum[3],botnum[4],botnum[5]);
-
-
-
-
-
-    fprintf(dumpfile,"int done = %d\n",done);
-    fprintf(dumpfile,"int newgame = %d;\n",newgame);
-    fprintf(dumpfile,"int times = %d\n",times);
-    fprintf(dumpfile,"int acecheck = %d, topcheck = %d\n",acecheck,topcheck);
-    fprintf(dumpfile,"int cardcur = %d\n;",cardcur);
-    fprintf(dumpfile,"int pressed = %d\n",pressed);
-
-
-    for (itter1 = 0; itter1 <= 7; itter1++){
-        for (itter2 = 0; itter2 <= 2; itter2++){
-            fprintf(dumpfile,"int deck[%d][%d] = %d\n",itter1,itter2,deck[itter1][itter2]);
-        }}
-
-    fprintf(dumpfile,"int deckcur = %d;\n",deckcur);
-    fprintf(dumpfile,"int decktotal = %d\n",decktotal);
-
-
-    for (itter1 = 0; itter1 <= 6; itter1++){
-        for (itter2 = 0; itter2 <= 12; itter2++){
-            fprintf(dumpfile,"int top[%d][%d] = %d\n",itter1,itter2,top[itter1][itter2]);
-        }}
-    for (itter1 = 0; itter1 <= 3; itter1++){
-        for (itter2 = 0; itter2 <= 12; itter2++){
-            fprintf(dumpfile,"int ace[%d][%d] = %d\n",itter1,itter2, ace[itter1][itter2]);
-        }}
-
-    for (itter1 = 0; itter1 <= 21; itter1++){
-        fprintf(dumpfile,"int bottom[%d] = %d\n",itter1,bottom[itter1]);
-    }
-
-    for (itter1 = 0; itter1 <= 51; itter1++){
-        fprintf(dumpfile,"int cards[%d] = %d\n",itter1,cards[itter1]);
-    }
-
-
-    fprintf(dumpfile,"int temp =%d\n",temp);
-    fprintf(dumpfile,"int temp2 =%d\n",temp2);
-    fprintf(dumpfile,"int temp3 =%d\n",temp3);
-    fprintf(dumpfile,"int cardnumber1 = %d,cardnumber2 = %d\n",cardnumber1,cardnumber2);
-    fprintf(dumpfile,"int suit1 = %d,suit2 = %d\n",suit1,suit2);
-    for (itter1 = 0; itter1 <= 3; itter1++){
-        for (itter2 = 0; itter2 <= 12; itter2++){
-            fprintf(dumpfile,"int manycardcur[%d][%d] = %d\n",itter1,itter2, manycardcur[itter1][itter2]);
-        }}
-    fprintf(dumpfile,"int lose = %d,win = %d\n",lose,win);
-    fprintf(dumpfile,"int scanit = %d\n",scanit);
-
-    fprintf(dumpfile,"int floater = %d\n",floater);
-
-    fprintf(dumpfile,"int finished = %d\n",finished);
-    fprintf(dumpfile,"int used = %d\n",used);
-
-    fprintf(dumpfile,"int i = %d, j = %d, k = %d;\n",i,j,k);
-    fprintf(dumpfile,"int cardsizey = %d\n",cardsizey);
-
-
-
-    fclose(dumpfile);
-}
-
-void flip_bottom(){
-    //test for fliping bottom cards up
-    for (var1 = 0; var1 <= 6; var1++){
-        if (!top[var1][0]){
-
-            switch (var1) {
-
-                case 1:
-                    if (bottom[0]) {
-                        top[var1][0] = bottom[0];
-                        bottom[0] = 0;
-//                        play_sample(cardflip, 100, 80, 1000, 0);
-                    }
-                    break;
-
-                case 2:
-                    if (bottom[2]) {
-                        top[var1][0] = bottom[2];
-                        bottom[2] = 0;
-//                        play_sample(cardflip, 100, 120, 1000, 0);
-                    }
-                    else if (bottom[1]) {
-                        top[var1][0] = bottom[1];
-                        bottom[1] = 0;
-//                        play_sample(cardflip, 100, 120, 1000, 0);
-                    }
-                    break;
-
-                case 3:
-                    if (bottom[5]) {
-                        top[var1][0] = bottom[5];
-                        bottom[5] = 0;
-//                        play_sample(cardflip, 100, 128, 1000, 0);
-                    }
-                    else if (bottom[4]) {
-                        top[var1][0] = bottom[4];
-                        bottom[4] = 0;
-//                        play_sample(cardflip, 100, 128, 1000, 0);
-                    }
-                    else if (bottom[3]) {
-                        top[var1][0] = bottom[3];
-                        bottom[3] = 0;
-//                        play_sample(cardflip, 100, 128, 1000, 0);
-                    }
-                    break;
-
-                case 4:
-                    if (bottom[9]) {
-                        top[var1][0] = bottom[9];
-                        bottom[9] = 0;
-//                        play_sample(cardflip, 100, 138, 1000, 0);
-                    }
-                    else if (bottom[8]) {
-                        top[var1][0] = bottom[8];
-                        bottom[8] = 0;
-//                        play_sample(cardflip, 100, 138, 1000, 0);
-                    }
-                    else if (bottom[7]) {
-                        top[var1][0] = bottom[7];
-                        bottom[7] = 0;
-//                        play_sample(cardflip, 100, 138, 1000, 0);
-                    }
-                    else if (bottom[6]) {
-                        top[var1][0] = bottom[6];
-                        bottom[6] = 0;
-//                        play_sample(cardflip, 100, 138, 1000, 0);
-                    }
-                    break;
-
-                case 5:
-                    if (bottom[14]) {
-                        top[var1][0] = bottom[14];
-                        bottom[14] = 0;
-//                        play_sample(cardflip, 100, 170, 1000, 0);
-                    }
-                    else if (bottom[13]) {
-                        top[var1][0] = bottom[13];
-                        bottom[13] = 0;
-//                        play_sample(cardflip, 100, 170, 1000, 0);
-                    }
-                    else if (bottom[12]) {
-                        top[var1][0] = bottom[12];
-                        bottom[12] = 0;
-//                        play_sample(cardflip, 100, 170, 1000, 0);
-                    }
-                    else if (bottom[11]) {
-                        top[var1][0] = bottom[11];
-                        bottom[11] = 0;
-//                        play_sample(cardflip, 100, 170, 1000, 0);
-                    }
-                    else if (bottom[10]) {
-                        top[var1][0] = bottom[10];
-                        bottom[10] = 0;
-//                        play_sample(cardflip, 100, 170, 1000, 0);
-                    }
-                    break;
-
-                case 6:
-                    if (bottom[20]) {
-                        top[var1][0] = bottom[20];
-                        bottom[20] = 0;
-//                        play_sample(cardflip, 100, 210, 1000, 0);
-                    }
-                    else if (bottom[19]) {
-                        top[var1][0] = bottom[19];
-                        bottom[19] = 0;
-//                        play_sample(cardflip, 100, 210, 1000, 0);
-                    }
-                    else if (bottom[18]) {
-                        top[var1][0] = bottom[18];
-                        bottom[18] = 0;
-//                        play_sample(cardflip, 100, 210, 1000, 0);
-                    }
-                    else if (bottom[17]) {
-                        top[var1][0] = bottom[17];
-                        bottom[17] = 0;
-//                        play_sample(cardflip, 100, 210, 1000, 0);
-                    }
-                    else if (bottom[16]) {
-                        top[var1][0] = bottom[16];
-                        bottom[16] = 0;
-//                        play_sample(cardflip, 100, 210, 1000, 0);
-                    }
-                    else if (bottom[15]) {
-                        top[var1][0] = bottom[15];
-                        bottom[15] = 0;
-//                        play_sample(cardflip, 100, 210, 1000, 0);
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
+    for (int pile = 0; pile < 4; pile++) {
+        if (ace[pile][12] == 0) {
+            return 0;
         }
     }
+
+    return 1;
 }
-//void highcolor_fade_in(BITMAP *bmp_orig, int speed ,int highx, int highy)
-//{
-//   BITMAP *bmp_buff;
-//
-//    if ((bmp_buff = create_bitmap(SCREEN_W, SCREEN_H)))
-//    {
-//        int a;
-//        if (speed <= 0) speed = 16;
-//
-//        for (a = 0; a < 256; a+=speed)
-//        {
-//            clear(bmp_buff);
-//            set_trans_blender(0,0,0,a);
-//            draw_trans_sprite(bmp_buff, bmp_orig, highx, highy);
-//            vsync();
-//            blit(bmp_buff, screen, 0,0, 0,0, SCREEN_W, SCREEN_H);
-//        }
-//        destroy_bitmap(bmp_buff);
-//    }
-//
-//    blit(bmp_orig, screen, 0,0, highx,highy, SCREEN_W, SCREEN_H);
-//}
+
+/**
+ * Flips up a bottom pile card if all the cards on top have been moved away
+ * Safe to call multiple times
+ */
+void flip_bottom(){
+    int pile_bottom_max = -1; // first does not have bottom
+    for (int pile = 0; pile < 7; pile++) {
+        if (top[pile][0] == 0) {
+            for (int b = pile_bottom_max; b > pile_bottom_max - pile; b--) {
+                if (bottom[b] != 0) {
+                    top[pile][0] = bottom[b];
+                    bottom[b] = 0;
+                    break;
+                }
+            }
+        }
+        pile_bottom_max += pile + 1; // next pile has more cards in it. increment index by amount of cards
+    }
+
+    // arrangement of bottom[]
+    // nothing
+    // 0
+    // 1  2
+    // 3  4  5
+    // 6  7  8  9
+    // 10 11 12 13 14
+    // 15 16 17 18 19 20
+}
