@@ -41,10 +41,10 @@ FILE *fp;
 int var1,var2,var3,var4,var5,var6,var7,var8,var9;//meaningless variables use for itterations
 
 int cardspace = 30;
+int cardspace_bottom = 20;
 
 int x,y,a,b;
-int botx,boty;
-int botnum[6]; // array of number of cards on the bottom of each pile. skips first pile since it's always zero.
+int botnum[7];
 
 int done = 0;
 int newgame = 1;
@@ -87,7 +87,6 @@ int mouse();
 void highcolor_fade_out(int speed);
 int ace_check();
 int top_check();
-int bot(int tim);
 int can_move(int cardstart, int cardfinish);
 int can_ace_move(int cardstart, int cardfinish);
 int win_conditions();
@@ -465,7 +464,7 @@ int mouse(){
             if (!top[times][a]){break;}
         }
 
-        if(mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) && mouse_y > topy + (a * cardspace) - cardspace + (bot(times) * (cardspace - 10)) && mouse_y < topy + (a * cardspace) + cardsizey - cardspace + (bot(times) * (cardspace - 10)) && mouse.buttons){
+        if(mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) && mouse_y > topy + (a * cardspace) - cardspace + (botnum[times] * (cardspace - 10)) && mouse_y < topy + (a * cardspace) + cardsizey - cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons){
             temp2 = 1;
             temp = top[times][a - 1];
             if(temp > 13){temp -= 13; temp2++;}
@@ -473,7 +472,7 @@ int mouse(){
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
             x = mouse_x - startx - (times * 170);
-            y = mouse_y - topy - (a * cardspace) + cardspace - (bot(times) * (cardspace - 10));
+            y = mouse_y - topy - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
             cardcur = top[times][a-1];
             top[times][a - 1] = 0;
             while (mouse.buttons){
@@ -535,10 +534,10 @@ int mouse(){
         if (var5 > 1) { // if there is more than one card in the pile
             for (a = 0; a < var5 - 1; a++) { // for each card in the stack
                 if (mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) &&
-                    mouse_y > topy + (a * cardspace) + (bot(times) * (cardspace - 10)) &&
-                    mouse_y < topy + (a * cardspace) + cardspace + (bot(times) * (cardspace - 10)) && mouse.buttons) {
+                    mouse_y > topy + (a * cardspace) + (botnum[times] * (cardspace - 10)) &&
+                    mouse_y < topy + (a * cardspace) + cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons) {
                     x = mouse_x - startx - (times * 170);
-                    y = mouse_y - topy - (a * cardspace) + cardspace - (bot(times) * (cardspace - 10));
+                    y = mouse_y - topy - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
 
                     for (var6 = a; var6 < var5; var6++) {
                         temp2 = 1;
@@ -746,23 +745,23 @@ int top_check(){
 
 
         int card_x = startx + (pile * 170);
-        int card_y = topy + (top_cards + bot(pile))  * cardspace;
+        int card_y = topy + (top_cards * cardspace + botnum[pile] * cardspace_bottom);
         int card_w = 100;
         int card_h = cardsizey;
 
 
 //        if (mouse_x > startx + (pile * 170) &&
 //            mouse_x < startx + 100 + (pile * 170) &&
-//            mouse_y > topy + (first_empty * cardspace) - cardspace + (bot(pile) * cardspace) &&
-//            mouse_y < topy + (first_empty * cardspace) + cardsizey - cardspace + (bot(pile) * cardspace)) {
+//            mouse_y > topy + (first_empty * cardspace) - cardspace + (botnum[pile] * cardspace) &&
+//            mouse_y < topy + (first_empty * cardspace) + cardsizey - cardspace + (botnum[pile] * cardspace)) {
         if (collides(mouse_x, mouse_y, card_x, card_y, card_w, card_h)) {
-            printf("collides! %d top_cards: %d %d\n", bot(pile), top_cards, cardspace);
+            printf("collides! %d top_cards: %d %d at card_y:%d\n", botnum[pile], top_cards, cardspace, card_y);
             for (var2 = 0; var2 <= 13; var2++) {
 
                 int king_to_empty = (cardcur - 1) % 13 == 12 && top[pile][0] == 0;
 
                 if (!top[pile][var2] && (can_move(cardcur, top[pile][var2 - 1]) || king_to_empty)) {
-                    printf("Moving card %d to top[%d][%d]\n", cardcur, pile, var2);
+                    printf("Moving card %d to top[%d][%d] at card_y:%d\n", cardcur, pile, var2, card_y);
                     top[pile][var2] = cardcur;
                     cardcur = 0;
                     var3 = pile;
@@ -880,13 +879,33 @@ void draw(){
     }
 
 
-    for (i = 0; i < 6; i++){botnum[i] = 0;}
+    // bottom draw
 
-    for (a = 0; a < 21; a++){
+    ALLEGRO_BITMAP * cardbitmap = cardset == 1 ? cardbitmap1 : cardbitmap2;
 
-        find_bottom();
+    find_bottom();
+    al_set_target_bitmap(buffer);
+    for (int pile = 0; pile < 7; pile++) {
+        int botx = startx + pile * 170;
 
-    }//bottom slot parser/draw
+        for (int b = 0; b < botnum[pile]; b++) {
+            al_draw_bitmap_region(cardbitmap, 0, cardsizey * 4, 100, cardsizey, botx, topy + cardspace_bottom * b, 0);
+        }
+    }
+
+//    botx = startx + 170;
+//    boty = 224;
+//
+//    if(a == 0){if(bottom[0]){botnum[0] = 1;}}
+//
+//    if(a == 1){botx += 170; if(bottom[1]){botnum[1]++;}}
+//    if(a == 2){botx += 170; if(bottom[2]){boty += (cardspace - 10); botnum[1]++;}}
+//
+//
+//    if(a == 3){botx += 340; if(bottom[3]){botnum[2]++;}}
+//    if(a == 4){botx += 340; boty += (cardspace - 10); if(bottom[4]){botnum[2]++;}}
+//    if(a == 5){botx += 340; boty += (cardspace - 10) * 2; if(bottom[5]){botnum[2]++;}}
+
 
 
     x = 161;
@@ -936,7 +955,7 @@ void find_deck(){
 void find_top(){
     temp2 = 1;
     temp = top[a][b];
-    if(a > 0){temp3 = (botnum[a - 1] * (cardspace - 10));}
+    if(a >= 0){temp3 = (botnum[a] * (cardspace - 10));}
     if(temp > 13){temp -= 13; temp2++;}
     if(temp > 13){temp -= 13; temp2++;}
     if(temp > 13){temp -= 13; temp2++;}
@@ -970,67 +989,68 @@ void find_ace(){
 
 
 void find_bottom(){
-    temp2 = 0;
-    temp = bottom[a];
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
 
+    int pile_bottom_max = -1; // first does not have bottom
+    for (int pile = 0; pile < 7; pile++) {
+        int num = 0;
+        for (int b = pile_bottom_max; b > pile_bottom_max - pile; b--) {
+            if (bottom[b] != 0) {
+                num++;
+            }
+        }
+        botnum[pile] = num;
 
-
-
-    botx = startx + 170;
-    boty = 224;
-
-    if(a == 0){if(bottom[0]){botnum[0] = 1;}}
-
-    if(a == 1){botx += 170; if(bottom[1]){botnum[1]++;}}
-    if(a == 2){botx += 170; if(bottom[2]){boty += (cardspace - 10); botnum[1]++;}}
-
-
-    if(a == 3){botx += 340; if(bottom[3]){botnum[2]++;}}
-    if(a == 4){botx += 340; boty += (cardspace - 10); if(bottom[4]){botnum[2]++;}}
-    if(a == 5){botx += 340; boty += (cardspace - 10) * 2; if(bottom[5]){botnum[2]++;}}
-
-    if(a == 6){botx += 510; if(bottom[6]){botnum[3]++;}}
-    if(a == 7){botx += 510; boty += (cardspace - 10); if(bottom[7]){botnum[3]++;}}
-    if(a == 8){botx += 510; boty += (cardspace - 10) * 2; if(bottom[8]){botnum[3]++;}}
-    if(a == 9){botx += 510; boty += (cardspace - 10) * 3; if(bottom[9]){botnum[3]++;}}
-
-    if(a == 10){botx += 680; if(bottom[10]){botnum[4]++;}}
-    if(a == 11){botx += 680; boty += (cardspace - 10); if(bottom[11]){botnum[4]++;}}
-    if(a == 12){botx += 680; boty += (cardspace - 10) * 2; if(bottom[12]){botnum[4]++;}}
-    if(a == 13){botx += 680; boty += (cardspace - 10) * 3; if(bottom[13]){botnum[4]++;}}
-    if(a == 14){botx += 680; boty += (cardspace - 10) * 4; if(bottom[14]){botnum[4]++;}}
-
-    if(a == 15){botx += 850; if(bottom[15]){botnum[5]++;}}
-    if(a == 16){botx += 850; boty += (cardspace - 10); if(bottom[16]){botnum[5]++;}}
-    if(a == 17){botx += 850; boty += (cardspace - 10) * 2; if(bottom[17]){botnum[5]++;}}
-    if(a == 18){botx += 850; boty += (cardspace - 10) * 3; if(bottom[18]){botnum[5]++;}}
-    if(a == 19){botx += 850; boty += (cardspace - 10) * 4; if(bottom[19]){botnum[5]++;}}
-    if(a == 20){botx += 850; boty += (cardspace - 10) * 5; if(bottom[20]){botnum[5]++;}}
-
-
-    if (bottom[a] != 0){
-        al_set_target_bitmap(buffer);
-        if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, botx, boty, 0);}
-        if (cardset == 2){al_draw_bitmap_region(cardbitmap2, 0, cardsizey * 4, 100, cardsizey, botx, boty, 0);}
+        pile_bottom_max += pile + 1; // next pile has more cards in it. increment index by amount of cards
     }
-}
 
-/**
- * Get number of cards on the bottom pile for a particular pile
- *
- * @param pile the pile to check
- * @return number of cards in the pile
- */
-int bot(int pile) {
-    if (pile == 0) {
-        return 0;
-    } else {
-        return botnum[pile - 1];
-    }
+
+
+
+
+
+
+
+
+//    temp2 = 0;
+//    temp = bottom[a];
+//    if(temp > 13){temp -= 13; temp2++;}
+//    if(temp > 13){temp -= 13; temp2++;}
+//    if(temp > 13){temp -= 13; temp2++;}
+//    if(temp > 13){temp -= 13; temp2++;}
+//
+//
+//
+//
+//    botx = startx + 170;
+//    boty = 224;
+//
+//    if(a == 0){if(bottom[0]){botnum[0] = 1;}}
+//
+//    if(a == 1){botx += 170; if(bottom[1]){botnum[1]++;}}
+//    if(a == 2){botx += 170; if(bottom[2]){boty += (cardspace - 10); botnum[1]++;}}
+//
+//
+//    if(a == 3){botx += 340; if(bottom[3]){botnum[2]++;}}
+//    if(a == 4){botx += 340; boty += (cardspace - 10); if(bottom[4]){botnum[2]++;}}
+//    if(a == 5){botx += 340; boty += (cardspace - 10) * 2; if(bottom[5]){botnum[2]++;}}
+//
+//    if(a == 6){botx += 510; if(bottom[6]){botnum[3]++;}}
+//    if(a == 7){botx += 510; boty += (cardspace - 10); if(bottom[7]){botnum[3]++;}}
+//    if(a == 8){botx += 510; boty += (cardspace - 10) * 2; if(bottom[8]){botnum[3]++;}}
+//    if(a == 9){botx += 510; boty += (cardspace - 10) * 3; if(bottom[9]){botnum[3]++;}}
+//
+//    if(a == 10){botx += 680; if(bottom[10]){botnum[4]++;}}
+//    if(a == 11){botx += 680; boty += (cardspace - 10); if(bottom[11]){botnum[4]++;}}
+//    if(a == 12){botx += 680; boty += (cardspace - 10) * 2; if(bottom[12]){botnum[4]++;}}
+//    if(a == 13){botx += 680; boty += (cardspace - 10) * 3; if(bottom[13]){botnum[4]++;}}
+//    if(a == 14){botx += 680; boty += (cardspace - 10) * 4; if(bottom[14]){botnum[4]++;}}
+//
+//    if(a == 15){botx += 850; if(bottom[15]){botnum[5]++;}}
+//    if(a == 16){botx += 850; boty += (cardspace - 10); if(bottom[16]){botnum[5]++;}}
+//    if(a == 17){botx += 850; boty += (cardspace - 10) * 2; if(bottom[17]){botnum[5]++;}}
+//    if(a == 18){botx += 850; boty += (cardspace - 10) * 3; if(bottom[18]){botnum[5]++;}}
+//    if(a == 19){botx += 850; boty += (cardspace - 10) * 4; if(bottom[19]){botnum[5]++;}}
+//    if(a == 20){botx += 850; boty += (cardspace - 10) * 5; if(bottom[20]){botnum[5]++;}}
 }
 
 /**
