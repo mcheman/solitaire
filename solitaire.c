@@ -81,7 +81,7 @@ void draw();
 void find_deck();
 void find_top();
 void find_bottom();
-void find_ace();
+void draw_ace_slot();
 int mouse();
 void highcolor_fade_out(int speed);
 int ace_check();
@@ -91,6 +91,7 @@ int can_ace_move(int cardstart, int cardfinish);
 int win_conditions();
 void flip_bottom();
 int collides(int x, int y, int box_x, int box_y, int box_w, int box_h);
+void draw_card(int card, int x, int y);
 
 #define SCREEN_W 1440
 #define SCREEN_H 900
@@ -334,7 +335,7 @@ int mouse(){
     mouse_y = mouse.y;
 
 
-    
+
     returnyes = 0;
 
     // draw card from deck section
@@ -822,10 +823,12 @@ void draw(){
     al_set_target_bitmap(buffer);
     al_draw_bitmap(outline,0,0,0);
 
-    for (a = 0; a <= 3; a++){
-
-        for (b = 0; b < 13; b++){
-            if (ace[a][b]){find_ace();}
+    for (a = 0; a < 4; a++){
+        for (b = 12; b >= 0; b--){
+            if (ace[a][b]){
+                draw_ace_slot();
+                break;
+            }
         }
     }//ace slot parser/draw
 
@@ -882,58 +885,56 @@ void draw(){
 
 
 void find_deck(){
-    temp2 = 1;
-    temp = deck[a][b];
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-
-
     if (deckcur != -1){
         al_set_target_bitmap(buffer);
-        if (cardset == 1){al_draw_bitmap_region(cardbitmap1, (100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, 350 + (b * cardspace), y, 0);}
-        if (cardset == 2){al_draw_bitmap_region(cardbitmap2, (100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, 350 + (b * cardspace), y, 0);}
-
+        draw_card(deck[a][b], 350 + (b * cardspace), y);
+//        if (cardset == 1){al_draw_bitmap_region(cardbitmap1, (100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, 350 + (b * cardspace), y, 0);}
+//        if (cardset == 2){al_draw_bitmap_region(cardbitmap2, (100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, 350 + (b * cardspace), y, 0);}
     }
-
-
 }
 
 
 void find_top(){
-    temp2 = 1;
-    temp = top[a][b];
     if(a >= 0){temp3 = (botnum[a] * (cardspace - 10));}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
 
     al_set_target_bitmap(buffer);
+    draw_card(top[a][b], x, y + temp3 + (b * cardspace));
 
-    if (cardset == 1){al_draw_bitmap_region(cardbitmap1,(100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, x, y + temp3 + (b * cardspace), 0);}
-    if (cardset == 2){al_draw_bitmap_region(cardbitmap2,(100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, x, y + temp3 + (b * cardspace), 0);}
+//    if (cardset == 1){al_draw_bitmap_region(cardbitmap1,(100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, x, y + temp3 + (b * cardspace), 0);}
+//    if (cardset == 2){al_draw_bitmap_region(cardbitmap2,(100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, x, y + temp3 + (b * cardspace), 0);}
     //textprintf_ex(buffer,font,x,y + temp3,makecol(0,0,0),makecol(250,250,250),"%d",top[a][b]);
-
-
 }
 
 
-void find_ace(){
+void draw_ace_slot(){
     x = 671;
     y = 24;
-    temp2 = 0;
-    temp = ace[a][b];
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
-    if(temp > 13){temp -= 13; temp2++;}
 
     al_set_target_bitmap(buffer);
+    draw_card(ace[a][b], x + (170 * (a)), y);
 
-    if (cardset == 1){al_draw_bitmap_region(cardbitmap1,(100 * temp) - 100, (cardsizey * temp2), 100, cardsizey, x + (170 * a), y, 0);}
-    if (cardset == 2){al_draw_bitmap_region(cardbitmap2,(100 * temp) - 100, (cardsizey * temp2), 100, cardsizey, x + (170 * a), y, 0);}
+//    if (cardset == 1){al_draw_bitmap_region(cardbitmap1,(100 * temp) - 100, (cardsizey * temp2), 100, cardsizey, x + (170 * a), y, 0);}
+//    if (cardset == 2){al_draw_bitmap_region(cardbitmap2,(100 * temp) - 100, (cardsizey * temp2), 100, cardsizey, x + (170 * a), y, 0);}
+}
+
+/**
+ * Draws card at x, y location
+ *
+ * @param card 1 - 53 card index
+ * @param x
+ * @param y
+ */
+void draw_card(int card, int x, int y) {
+    assert(card > 0);
+    assert(card < 53);
+
+    card = card - 1; // convert to zero based
+
+    int suit = card / 13;
+    int rank = card % 13;
+
+    // todo switch bitmap at global level
+    al_draw_bitmap_region(cardbitmap1, 100 * rank, cardsizey * suit, 100, cardsizey, x, y, 0);
 }
 
 
