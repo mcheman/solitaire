@@ -13,10 +13,10 @@
 //
 //a | 2| 3| 4| 5| 6| 7| 8| 9|10| j| q| k
 
-#define topy 224
-#define decky 24
-#define startx 161
-#define acex 671
+#define TOP_Y 224
+#define DECK_Y 24
+#define START_X 161
+#define ACE_X 671
 
 ALLEGRO_BITMAP * backround;
 ALLEGRO_BITMAP * buffer;
@@ -78,8 +78,8 @@ int i, j, k;
 
 void setup();
 void draw();
-void find_deck();
-void find_top();
+void draw_deck();
+void draw_top();
 void find_bottom();
 void draw_ace_slot();
 int mouse();
@@ -114,8 +114,8 @@ int main (void)
     bmp_buff = al_create_bitmap(SCREEN_W, SCREEN_H);
     backround = al_load_bitmap("backround.bmp");
     outline = al_load_bitmap("outline.bmp");
-    buffer = al_create_bitmap(SCREEN_W,SCREEN_H);
-    cbuffer = al_create_bitmap(SCREEN_W,SCREEN_H);
+    buffer = al_create_bitmap(SCREEN_W, SCREEN_H);
+    cbuffer = al_create_bitmap(SCREEN_W, SCREEN_H);
     cardbitmap1 = al_load_bitmap("cards1.bmp");
     cardbitmap2 = al_load_bitmap("cards22.bmp");
 
@@ -340,12 +340,12 @@ int mouse(){
 
     // draw card from deck section
 
-    if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + cardsizey && mouse.buttons & 1 && !pressed){
+    if (mouse_x > START_X && mouse_x < START_X + 100 && mouse_y > DECK_Y && mouse_y < DECK_Y + cardsizey && mouse.buttons & 1 && !pressed){
         deckcur++;
         pressed = 1;
 //        play_sample(cardflip, 40, 60, 1000, 0);
     }
-    if (mouse_x > startx && mouse_x < startx + 100 && mouse_y > decky && mouse_y < decky + cardsizey && mouse.buttons & 2 && !pressed){
+    if (mouse_x > START_X && mouse_x < START_X + 100 && mouse_y > DECK_Y && mouse_y < DECK_Y + cardsizey && mouse.buttons & 2 && !pressed){
         deckcur--;
         pressed = 1;
 //        play_sample(cardflip, 40, 60, 1000, 0);
@@ -362,7 +362,7 @@ int mouse(){
 //if (b == -1){return;}
 
 //deck mouse movement
-    if (b != -1 && deckcur != -1 && mouse_x > 350 + (b * cardspace) && mouse_x < 450 + (b * cardspace) && mouse_y > decky && mouse_y < decky + cardsizey && mouse.buttons){
+    if (b != -1 && deckcur != -1 && mouse_x > 350 + (b * cardspace) && mouse_x < 450 + (b * cardspace) && mouse_y > DECK_Y && mouse_y < DECK_Y + cardsizey && mouse.buttons){
         temp2 = 1;
         temp = deck[deckcur][b];
         if(temp > 13){temp -= 13; temp2++;}
@@ -370,7 +370,7 @@ int mouse(){
         if(temp > 13){temp -= 13; temp2++;}
         if(temp > 13){temp -= 13; temp2++;}
         x = mouse_x - 350 - (b * cardspace);
-        y = mouse_y - decky;
+        y = mouse_y - DECK_Y;
         cardcur = deck[deckcur][b];
         deck[deckcur][b] = 0;
         while (mouse.buttons){
@@ -428,15 +428,15 @@ int mouse(){
             if (!top[times][a]){break;}
         }
 
-        if(mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) && mouse_y > topy + (a * cardspace) - cardspace + (botnum[times] * (cardspace - 10)) && mouse_y < topy + (a * cardspace) + cardsizey - cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons){
+        if(mouse_x > START_X + (times * 170) && mouse_x < START_X + 100 + (times * 170) && mouse_y > TOP_Y + (a * cardspace) - cardspace + (botnum[times] * (cardspace - 10)) && mouse_y < TOP_Y + (a * cardspace) + cardsizey - cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons){
             temp2 = 1;
             temp = top[times][a - 1];
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
-            x = mouse_x - startx - (times * 170);
-            y = mouse_y - topy - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
+            x = mouse_x - START_X - (times * 170);
+            y = mouse_y - TOP_Y - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
             cardcur = top[times][a-1];
             top[times][a - 1] = 0;
             while (mouse.buttons){
@@ -497,11 +497,11 @@ int mouse(){
         }
         if (var5 > 1) { // if there is more than one card in the pile
             for (a = 0; a < var5 - 1; a++) { // for each card in the stack
-                if (mouse_x > startx + (times * 170) && mouse_x < startx + 100 + (times * 170) &&
-                    mouse_y > topy + (a * cardspace) + (botnum[times] * (cardspace - 10)) &&
-                    mouse_y < topy + (a * cardspace) + cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons) {
-                    x = mouse_x - startx - (times * 170);
-                    y = mouse_y - topy - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
+                if (mouse_x > START_X + (times * 170) && mouse_x < START_X + 100 + (times * 170) &&
+                    mouse_y > TOP_Y + (a * cardspace) + (botnum[times] * (cardspace - 10)) &&
+                    mouse_y < TOP_Y + (a * cardspace) + cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons) {
+                    x = mouse_x - START_X - (times * 170);
+                    y = mouse_y - TOP_Y - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
 
                     for (var6 = a; var6 < var5; var6++) {
                         temp2 = 1;
@@ -605,15 +605,15 @@ int mouse(){
         for (a = 0; a < 12; a++){
             if (!ace[times][a]){break;}
         }
-        if(mouse_x > acex + (times * 170) && mouse_x < acex + 100 + (times * 170) && mouse_y > decky && mouse_y < decky + cardsizey && mouse.buttons){
+        if(mouse_x > ACE_X + (times * 170) && mouse_x < ACE_X + 100 + (times * 170) && mouse_y > DECK_Y && mouse_y < DECK_Y + cardsizey && mouse.buttons){
             temp2 = 1;
             temp = ace[times][a - 1];
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
             if(temp > 13){temp -= 13; temp2++;}
-            x = mouse_x - acex - (times * 170);
-            y = mouse_y - decky;
+            x = mouse_x - ACE_X - (times * 170);
+            y = mouse_y - DECK_Y;
             cardcur = ace[times][a-1];
             ace[times][a - 1] = 0;
             while (mouse.buttons){
@@ -666,7 +666,7 @@ int ace_check(){
     mouse_y = mouse.y;
 
     for (var1 = 0; var1 <= 3; var1++){
-        if(mouse_x > acex + (var1 * 170) && mouse_x < acex + 100 + (var1 * 170) && mouse_y > decky && mouse_y < decky + cardsizey){
+        if(mouse_x > ACE_X + (var1 * 170) && mouse_x < ACE_X + 100 + (var1 * 170) && mouse_y > DECK_Y && mouse_y < DECK_Y + cardsizey){
             for (var2 = 0; var2 <= 13; var2++){
 
                 int ace_to_empty = ace[var1][0] == 0 && ((cardcur - 1) % 13) == 0;
@@ -708,16 +708,16 @@ int top_check(){
         int top_cards = first_empty > 0 ? first_empty - 1 : 0;
 
 
-        int card_x = startx + (pile * 170);
-        int card_y = topy + (top_cards * cardspace + botnum[pile] * cardspace_bottom);
+        int card_x = START_X + (pile * 170);
+        int card_y = TOP_Y + (top_cards * cardspace + botnum[pile] * cardspace_bottom);
         int card_w = 100;
         int card_h = cardsizey;
 
 
-//        if (mouse_x > startx + (pile * 170) &&
-//            mouse_x < startx + 100 + (pile * 170) &&
-//            mouse_y > topy + (first_empty * cardspace) - cardspace + (botnum[pile] * cardspace) &&
-//            mouse_y < topy + (first_empty * cardspace) + cardsizey - cardspace + (botnum[pile] * cardspace)) {
+//        if (mouse_x > START_X + (pile * 170) &&
+//            mouse_x < START_X + 100 + (pile * 170) &&
+//            mouse_y > TOP_Y + (first_empty * cardspace) - cardspace + (botnum[pile] * cardspace) &&
+//            mouse_y < TOP_Y + (first_empty * cardspace) + cardsizey - cardspace + (botnum[pile] * cardspace)) {
         if (collides(mouse_x, mouse_y, card_x, card_y, card_w, card_h)) {
             printf("collides! %d top_cards: %d %d at card_y:%d\n", botnum[pile], top_cards, cardspace, card_y);
             for (var2 = 0; var2 <= 13; var2++) {
@@ -754,62 +754,50 @@ int collides(int x, int y, int box_x, int box_y, int box_w, int box_h) {
 
 
 
-void setup(){
-
+void setup() {
     decktotal = 7;
-//resets all card slots
-    for (var1 = 0; var1 <= 6; var1++){
-        for (var2 = 0; var2 <= 13; var2++){
-            top[var1][var2] = 0;
+    //resets all card slots
+    memset(top, 0, sizeof(top));
+    memset(deck, 0, sizeof(deck));
+    memset(ace, 0, sizeof(ace));
+    memset(bottom, 0, sizeof(bottom));
+
+    // create cards in sorted order
+    for (i = 0; i < 52; i++){
+        cards[i] = i + 1;
+    }
+
+    // fisher-yates shuffle
+    int shuffled_cards[52];
+
+    for (int i = 51; i >= 0; i--) {
+        int random_card = rand() % (i + 1); // rand mod remaining cards to select
+
+        // pick random card
+        shuffled_cards[i] = cards[random_card];
+
+        // replace picked card with the last card in the array so the unpicked cards are at the beginning
+        cards[random_card] = cards[i];
+    }
+
+    // deal cards
+    int card_index = 0;
+
+    for (int i = 0; i < 7; i++){
+        top[i][0] = shuffled_cards[card_index++];
+    }
+
+    for (int i = 0; i < 21; i++){
+        bottom[i] = shuffled_cards[card_index++];
+    }
+
+    for (i = 0; i < 8; i++){
+        for (j = 0; j < 3; j++){
+            deck[i][j] = shuffled_cards[card_index++];
         }
     }
-    for (var1 = 0; var1 <= 7; var1++){
-        for (var2 = 0; var2 <= 2; var2++){
-            deck[var1][var2] = 0;
-        }
-    }
-    for (var1 = 0; var1 <= 3; var1++){
-        for (var2 = 0; var2 <= 13; var2++){
-            ace[var1][var2] = 0;
-        }
-    }
-    for (var2 = 0; var2 <= 21; var2++){
-        bottom[var1] = 0;
-    }
 
-
-
-    for (var1 = 0; var1 <= 52; var1++){
-        cards[var1] = var1 + 1;
-    }
-
-
-
-    for (i = 0; i < 52; i++) {
-        j = rand() % 52;
-        k = cards[i];
-        cards[i] = cards[j];
-        cards[j] = k;
-    }
-
-
-    for (var1 = 0; var1 <= 6; var1++){
-        top[var1][0] = cards[var1];
-    }//sets cards on top
-
-    for (var1 = 0; var1 <= 21; var1++){
-        bottom[var1] = cards[var1 + 7];
-    }//sets cards on bottom
-
-    var3 = 28;
-    for (var1 = 0; var1 <= 7; var1++){
-        for (var2 = 0; var2 <= 2; var2++){
-            deck[var1][var2] = cards[var3];
-            var3++;
-        }
-    }//sets cards in deck
-
-
+    assert(card_index == 52);
     newgame = 0;
 }
 
@@ -819,29 +807,32 @@ void setup(){
 void draw(){
     al_set_target_bitmap(buffer);
     al_draw_bitmap(backround,0,0,0);
-
-    al_set_target_bitmap(buffer);
     al_draw_bitmap(outline,0,0,0);
 
+    // draw ace slots
     for (a = 0; a < 4; a++){
         for (b = 12; b >= 0; b--){
             if (ace[a][b]){
-                draw_ace_slot();
+                draw_card(ace[a][b], ACE_X + (170 * (a)), DECK_Y);
                 break;
             }
         }
-    }//ace slot parser/draw
+    }
 
+    // draw 3 deck cards
     y = 24;
     a = deckcur;
-    for (b = 0; b < 3; b++){
-        if (deck[a][b]){find_deck();}
-
+    for (b = 0; b < 3; b++) {
+        // deckcur is what the current page of the deck is exposed
+        if (deck[a][b] && deckcur != -1) { // deckcur -1 means first page with does not have dealt cards
+            al_set_target_bitmap(buffer);
+            draw_card(deck[a][b], 350 + (b * cardspace), y);
+        }
     }//deck slot parser/draw
+
     if (deckcur < decktotal){
-        al_set_target_bitmap(buffer);
-        if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, startx, 24, 0);}
-        if (cardset == 2){al_draw_bitmap_region(cardbitmap2, 0, cardsizey * 4, 100, cardsizey, startx, 24, 0);}
+        if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, START_X, 24, 0);}
+        if (cardset == 2){al_draw_bitmap_region(cardbitmap2, 0, cardsizey * 4, 100, cardsizey, START_X, 24, 0);}
     }
 
 
@@ -850,12 +841,11 @@ void draw(){
     ALLEGRO_BITMAP * cardbitmap = cardset == 1 ? cardbitmap1 : cardbitmap2;
 
     find_bottom();
-    al_set_target_bitmap(buffer);
     for (int pile = 0; pile < 7; pile++) {
-        int botx = startx + pile * 170;
+        int botx = START_X + pile * 170;
 
         for (int b = 0; b < botnum[pile]; b++) {
-            al_draw_bitmap_region(cardbitmap, 0, cardsizey * 4, 100, cardsizey, botx, topy + cardspace_bottom * b, 0);
+            al_draw_bitmap_region(cardbitmap, 0, cardsizey * 4, 100, cardsizey, botx, TOP_Y + cardspace_bottom * b, 0);
         }
     }
 
@@ -866,7 +856,7 @@ void draw(){
         temp3 = 0;
 
         for (b = 0; b < 13; b++){
-            if (top[a][b]){find_top();}
+            if (top[a][b]){ draw_top();}
         }
         x += 170;
     }//top slot parser/draw
@@ -881,20 +871,7 @@ void draw(){
 }
 
 
-
-
-
-void find_deck(){
-    if (deckcur != -1){
-        al_set_target_bitmap(buffer);
-        draw_card(deck[a][b], 350 + (b * cardspace), y);
-//        if (cardset == 1){al_draw_bitmap_region(cardbitmap1, (100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, 350 + (b * cardspace), y, 0);}
-//        if (cardset == 2){al_draw_bitmap_region(cardbitmap2, (100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, 350 + (b * cardspace), y, 0);}
-    }
-}
-
-
-void find_top(){
+void draw_top(){
     if(a >= 0){temp3 = (botnum[a] * (cardspace - 10));}
 
     al_set_target_bitmap(buffer);
@@ -903,18 +880,6 @@ void find_top(){
 //    if (cardset == 1){al_draw_bitmap_region(cardbitmap1,(100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, x, y + temp3 + (b * cardspace), 0);}
 //    if (cardset == 2){al_draw_bitmap_region(cardbitmap2,(100 * temp) - 100, (cardsizey * temp2) - cardsizey, 100, cardsizey, x, y + temp3 + (b * cardspace), 0);}
     //textprintf_ex(buffer,font,x,y + temp3,makecol(0,0,0),makecol(250,250,250),"%d",top[a][b]);
-}
-
-
-void draw_ace_slot(){
-    x = 671;
-    y = 24;
-
-    al_set_target_bitmap(buffer);
-    draw_card(ace[a][b], x + (170 * (a)), y);
-
-//    if (cardset == 1){al_draw_bitmap_region(cardbitmap1,(100 * temp) - 100, (cardsizey * temp2), 100, cardsizey, x + (170 * a), y, 0);}
-//    if (cardset == 2){al_draw_bitmap_region(cardbitmap2,(100 * temp) - 100, (cardsizey * temp2), 100, cardsizey, x + (170 * a), y, 0);}
 }
 
 /**
@@ -940,6 +905,7 @@ void draw_card(int card, int x, int y) {
 
 /**
  * Calculates the botnum array from the values in bottom
+ * botnum is the number of face down cards per pile
  */
 void find_bottom(){
 
