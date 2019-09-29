@@ -103,7 +103,7 @@ int main (void)
     event_queue = al_create_event_queue();
     al_register_event_source(event_queue, al_get_display_event_source(display));
 
-    fp = fopen("highscores.txt","r");
+//    fp = fopen("highscores.txt","r");
 
     srand(time(NULL));
 
@@ -125,16 +125,16 @@ int main (void)
 
     al_set_system_mouse_cursor(display, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
 
-    while (1){
-        scanit = fgetc(fp);
-        if (feof(fp)){break;}
-        if (scanit == '0'){lose++;}
-        if (scanit == '1'){win++;}
-    }
+//    while (1){
+//        scanit = fgetc(fp);
+//        if (feof(fp)){break;}
+//        if (scanit == '0'){lose++;}
+//        if (scanit == '1'){win++;}
+//    }
 
-    remove("undo.txt");
-    fclose(fp);
-    fp = fopen("highscores.txt","a");
+//    remove("undo.txt");
+//    fclose(fp);
+//    fp = fopen("highscores.txt","a");
 //FILE *undo = fopen("undo.txt","w+");
 //fprintf(undo,"-");
 //undonumber = 1;
@@ -301,7 +301,7 @@ int main (void)
 
 
         if (win_conditions() == 1){/*do a wild win screen*/
-            fprintf(fp,"1");
+//            fprintf(fp,"1");
             done = 3;
 
         }
