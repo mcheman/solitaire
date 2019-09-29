@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.9)
+project(solitaire C)
+
+find_library(ALLEGRO_LIB allegro)
+find_library(ALLEGRO_IMAGE_LIB allegro_image)
+
+set(CMAKE_C_STANDARD 99)
+#set(CMAKE_BUILD_TYPE Debug)
+
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+
+add_executable(solitaire solitaire.c)
+
+target_link_libraries(solitaire "${ALLEGRO_LIB}" "${ALLEGRO_IMAGE_LIB}")

@@ -309,25 +309,9 @@ int main (void)
 
 
 
-        if (win_conditions() == 1){/*do a wild win screen*/fprintf(fp,"1");done = 3;  //highcolor_fade_out(4);
-            /*BITMAP * tempbuf = create_bitmap(100,10);
-            textprintf_ex(tempbuf,font,0,0,makecol(250,250,250),-1,"Press Any Key To Play Again");
-            highcolor_fade_in(tempbuf, 4,SCREEN_W / 2 - 40, SCREEN_H / 2); destroy_bitmap(tempbuf);*/
-//            clear_keybuf();
-//            clear_bitmap(buffer);
-//            while (!keypressed()){
-//                if (!win && !lose){floater = 100;}
-//                if (lose == 1 && win == 0){floater = 0;}
-//                if (win == 1 && lose == 0){floater = 100;}
-//                if (win && lose){floater = win * 100 / (win + lose) ;}
-//                textprintf_ex(buffer,font,SCREEN_W / 2 - 80,SCREEN_H / 2 + 60,makecol(250,250,250),-1,"Press Any Key To Play Again");
-//                textprintf_ex(buffer,font,SCREEN_W / 2 - 29,SCREEN_H / 2,makecol(250,250,250),-1,"You Have Won");
-//                textprintf_ex(buffer,font,1285,858,makecol(200,200,200),-1,"Games Won       %d",win);
-//                textprintf_ex(buffer,font,1285,869,makecol(200,200,200),-1,"Games Lost      %d",lose);
-//                textprintf_ex(buffer,font,1285,880,makecol(200,200,200),-1,"Win Percentage  %d",floater);
-//                draw_sprite(screen,buffer,0,0);
-//            }
-//            if (!key[KEY_ESC] && done != 1){system("solitaire.exe");}
+        if (win_conditions() == 1){/*do a wild win screen*/
+            fprintf(fp,"1");
+            done = 3;
 
         }
 
@@ -335,32 +319,12 @@ int main (void)
         if (al_key_down(&state, ALLEGRO_KEY_ENTER)){newgame = 1; }
         if (al_key_down(&state, ALLEGRO_KEY_A)){ace[0][12] = 13; ace[1][12] = 26; ace[2][12] = 39; ace[3][12] = 52;}
 
-
-//        rest(20);
-
-
-    }//while loop end
-
-
-//    destroy_bitmap(buffer);
-//    destroy_bitmap(outline);
-//    destroy_bitmap(backround);
-//    destroy_bitmap(cardbitmap1);
-//    destroy_bitmap(cardbitmap2);
-//    destroy_bitmap(cursor);
-//    destroy_bitmap(cbuffer);
-//
-//    destroy_sample(wrong);
-//    destroy_sample(cardflip);
-//
-//
-//    allegro_exit();
-    fclose(fp);
-//fclose(undo);
+    }
 
     return 1;
-}//program end
-//END_OF_MAIN()
+}
+
+
 int mouse(){
     int mouse_x, mouse_y;
 
@@ -443,7 +407,7 @@ int mouse(){
 
         if (acecheck || topcheck){returnyes = 1;}
         if (!acecheck && !topcheck){
-            deck[deckcur][b] = cardcur;
+            deck[deckcur][b] = cardcur; // put card back
 //            play_sample(wrong, 250, 128, 1000, 0);
         }
 
