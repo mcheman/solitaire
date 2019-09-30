@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-//also need to solve problem of two cards on screen at once w/ mouse select
-
 //1 | 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13 clubs
 //14|15|16|17|18|19|20|21|22|23|24|25|26 diamonds
 //27|28|29|30|31|32|33|34|35|36|37|38|39 hearts
@@ -33,11 +31,9 @@ ALLEGRO_EVENT_QUEUE * event_queue;
 //SAMPLE * wrong;
 //SAMPLE * cardflip;
 
-FILE *fp;
+//FILE *fp;
 
-
-
-int var1,var2,var3,var4,var5,var6,var7,var8,var9;//meaningless variables use for itterations
+int var3;
 
 int cardspace = 30;
 int cardspace_bottom = 20;
@@ -50,10 +46,8 @@ int newgame = 1;
 
 int cardsizey = 145;
 
-int returnyes = 0;
 int undocur;
 int undonumber = 0;
-int times = 0;
 int acecheck, topcheck;
 int cardcur;
 int pressed = 0;
@@ -64,21 +58,24 @@ int top[7][13];
 int ace[4][13];
 int bottom[22]; // only first 20 are actually used
 int cards[52];
-int temp;
-int temp2;
 int temp3;
-int manycardcur[13][3];
 int lose,win;
 int scanit;
 
 int cardset = 1;
 int i, j, k;
 
+int drag_cards[13];
+int drag_size = 0;
+int drag_original_pile = 0;
+int offset_x = 0;
+int offset_y = 0;
+
 void setup();
 void draw();
 void draw_top();
 void find_bottom();
-int mouse();
+void mouse();
 void highcolor_fade_out(int speed);
 int try_move_to_ace_row(int card);
 int try_move_to_top_row(int card);
@@ -106,6 +103,7 @@ int main (void)
 //    fp = fopen("highscores.txt","r");
 
     srand(time(NULL));
+//    srand(26);
 
     bmp_buff = al_create_bitmap(SCREEN_W, SCREEN_H);
     backround = al_load_bitmap("backround.bmp");
@@ -148,34 +146,28 @@ int main (void)
             al_get_next_event(event_queue, &event);
 
             if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-                return 1;
+                return 0;
             }
         }
 
 
-        if (newgame){setup();}
+        if (newgame) {
+            setup();
+        }
 
         //if (key[KEY_1]){set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1440,900,0,0);show_mouse(screen);}
         //  if (key[KEY_2]){set_gfx_mode(GFX_AUTODETECT_FULLSCREEN, 1680,1050,0,0);show_mouse(screen);}
 
 
         if (deckcur == -1){
-
-            for (var1 = 0; var1 < 8; var1++){
-                for (var2 = 0; var2 < 2; var2++){
-                    if (deck[var1][var2] == 0){deck[var1][var2] = deck[var1][var2+1]; deck[var1][var2+1] = 0;}
+            for (int i = 0; i < 8; i++){
+                for (int j = 0; j < 2; j++){
+                    if (deck[i][j] == 0){deck[i][j] = deck[i][j+1]; deck[i][j+1] = 0;}
 
                 }
-                if (deck[var1][2] == 0 && var1 != 7){deck[var1][2] = deck[var1+1][0]; deck[var1+1][0] = 0;}
+                if (deck[i][2] == 0 && i != 7){deck[i][2] = deck[i+1][0]; deck[i+1][0] = 0;}
             }
-
         }
-
-
-
-        flip_bottom();
-
-
 
         if (al_key_down(&state, ALLEGRO_KEY_2)){cardsizey = 155; cardset = 2;}
         if (al_key_down(&state, ALLEGRO_KEY_3)){cardsizey = 145; cardset = 1;}
@@ -184,6 +176,8 @@ int main (void)
 //        else {set_window_title("solitaire");}
 
 
+        flip_bottom();
+
         draw();
         al_set_target_backbuffer(display);
         al_draw_bitmap(buffer, 0, 0, 0);
@@ -191,8 +185,6 @@ int main (void)
 
 
         mouse();
-
-
 
 
         ////deck,top,ace,bottom
@@ -291,14 +283,11 @@ int main (void)
         if (al_key_down(&state, ALLEGRO_KEY_DOWN)){deckcur--;/*rest(30);*/}
         if (deckcur < -1){deckcur = 7;}
         if (deckcur > decktotal){deckcur =-1;}
-        times =0;
-        for (var1 = 0; var1 <= 2; var1++){
-            if (deck[decktotal][var1] == 0){times++;}
+        int times = 0;
+        for (int i = 0; i <= 2; i++){
+            if (deck[decktotal][i] == 0){times++;}
             if (times == 3){decktotal--;}
         }
-
-
-
 
         if (win_conditions() == 1){/*do a wild win screen*/
 //            fprintf(fp,"1");
@@ -306,8 +295,9 @@ int main (void)
 
         }
 
-
-        if (al_key_down(&state, ALLEGRO_KEY_ENTER)){newgame = 1; }
+        if (al_key_down(&state, ALLEGRO_KEY_ENTER)){
+            newgame = 1;
+        }
         if (al_key_down(&state, ALLEGRO_KEY_A)){ace[0][12] = 13; ace[1][12] = 26; ace[2][12] = 39; ace[3][12] = 52;}
 
     }
@@ -316,7 +306,7 @@ int main (void)
 }
 
 
-int mouse(){
+void mouse(){
     ALLEGRO_MOUSE_STATE mouse;
     al_get_mouse_state(&mouse);
 
@@ -340,11 +330,7 @@ int mouse(){
     if (deck[deckcur][2]){b = 2;}
     //if (b == -1){return;}
 
-    int offset_x = 0;
-    int offset_y = 0;
-
     int deck_moved = 0;
-    int top_moved = 0;
     int ace_moved = 0;
 
     int previous_index = 0;
@@ -353,7 +339,7 @@ int mouse(){
     // check if we want to start moving a card
 
     //deck mouse movement
-    if (b != -1 && deckcur != -1 && mouse.buttons && collides(mouse.x, mouse.y, 350 + (b * cardspace), DECK_Y, 100, cardsizey)) {
+    if (drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, 350 + (b * cardspace), DECK_Y, 100, cardsizey)) {
         offset_x = 350 + (b * cardspace) - mouse.x;
         offset_y = DECK_Y - mouse.y;
         cardcur = deck[deckcur][b];
@@ -363,41 +349,23 @@ int mouse(){
         previous_pile = deckcur;
     }
 
-    //top mouse movement
-    int pile;
-    for (pile = 0; pile <= 6; pile++) {
-        for (a = 0; a < 12; a++) {
-            if (!top[pile][a]) { break; }
-        }
-
-        if (mouse.buttons && collides(mouse.x, mouse.y, START_X + (pile * 170), TOP_Y + ((a - 1) * cardspace) + (botnum[pile] * (cardspace - 10)), 100, cardsizey)) {
-            offset_x = START_X + (pile * 170) - mouse.x;
-            offset_y = TOP_Y + ((a - 1) * cardspace) + (botnum[pile] * (cardspace - 10)) - mouse.y;
-            cardcur = top[pile][a - 1];
-            top[pile][a - 1] = 0;
-            top_moved = 1;
-            previous_index = a - 1;
-            previous_pile = pile;
-        }
-    }
-
     //ace mouse movement
-    for (times = 0; times <= 3; times++) {
+    for (int piles = 0; piles <= 3; piles++) {
         for (a = 0; a < 12; a++) {
-            if (!ace[times][a]) { break; }
+            if (!ace[piles][a]) { break; }
         }
-        if (mouse.buttons && collides(mouse.x, mouse.y, ACE_X + (times * 170), DECK_Y, 100, cardsizey)) {
-            offset_x = ACE_X + (times * 170) - mouse.x;
+        if (drag_size == 0 && collides(mouse.x, mouse.y, ACE_X + (piles * 170), DECK_Y, 100, cardsizey)) {
+            offset_x = ACE_X + (piles * 170) - mouse.x;
             offset_y = DECK_Y - mouse.y;
-            cardcur = ace[times][a - 1];
-            ace[times][a - 1] = 0;
+            cardcur = ace[piles][a - 1];
+            ace[piles][a - 1] = 0;
             ace_moved = 1;
             previous_index = a - 1;
-            previous_pile = times;
+            previous_pile = piles;
         }
     }
 
-    int any_moved = deck_moved || top_moved || ace_moved;
+    int any_moved = deck_moved || ace_moved;
 
     // If we've clicked on a card, move it around
     while (mouse.buttons && any_moved) {
@@ -423,8 +391,6 @@ int mouse(){
         if (!acecheck && !topcheck) {
             if (deck_moved) {
                 deck[previous_pile][previous_index] = cardcur;
-            } else if (top_moved) {
-                top[previous_pile][previous_index] = cardcur;
             } else if (ace_moved) {
                 ace[previous_pile][previous_index] = cardcur;
             }
@@ -432,99 +398,80 @@ int mouse(){
         }
     }
 
-
-//top mouse movement (its the one that move many cards at once)
-
-    // times == piles
-    // var5 == first_empty
-
-    for (times = 0; times <= 6; times++) {
-        for (var5 = 0; var5 < 12; var5++) {
-            if (!top[times][var5]) { break; }
-        }
-        if (var5 > 1) { // if there is more than one card in the pile
-            for (a = 0; a < var5 - 1; a++) { // for each card in the stack
-                if (mouse.x > START_X + (times * 170) && mouse.x < START_X + 100 + (times * 170) &&
-                    mouse.y > TOP_Y + (a * cardspace) + (botnum[times] * (cardspace - 10)) &&
-                    mouse.y < TOP_Y + (a * cardspace) + cardspace + (botnum[times] * (cardspace - 10)) && mouse.buttons) {
-                    x = mouse.x - START_X - (times * 170);
-                    y = mouse.y - TOP_Y - (a * cardspace) + cardspace - (botnum[times] * (cardspace - 10));
-
-                    for (var6 = a; var6 < var5; var6++) {
-                        temp2 = 1;
-                        temp = top[times][var6];
-                        if (temp > 13) {
-                            temp -= 13;
-                            temp2++;
-                        }
-                        if (temp > 13) {
-                            temp -= 13;
-                            temp2++;
-                        }
-                        if (temp > 13) {
-                            temp -= 13;
-                            temp2++;
-                        }
-                        if (temp > 13) {
-                            temp -= 13;
-                            temp2++;
-                        }
-
-                        manycardcur[var6][1] = temp;
-                        manycardcur[var6][2] = temp2;
-                        manycardcur[var6][0] = top[times][var6];
-                        top[times][var6] = 0;
-                    }
-                    while (mouse.buttons) {
-                        al_get_mouse_state(&mouse);
-
-                        al_set_target_bitmap(cbuffer);
-                        al_draw_bitmap(buffer, 0, 0, 0);
-
-//                        draw_sprite(cbuffer,buffer,0,0);
-                        for (var6 = a; var6 < var5 + a; var6++) {
-
-                            if (cardset == 1) {
-                                al_draw_bitmap_region(cardbitmap1, (100 * manycardcur[var6][1]) - 100,
-                                                      (cardsizey * manycardcur[var6][2]) - cardsizey, 100, cardsizey,
-                                                      mouse.x - x,
-                                                      mouse.y - y + (var6 * cardspace) + cardspace - (a * cardspace),
-                                                      0);
-                            } else if (cardset == 2) {
-                                al_draw_bitmap_region(cardbitmap2, (100 * manycardcur[var6][1]) - 100,
-                                                      (cardsizey * manycardcur[var6][2]) - cardsizey, 100, cardsizey,
-                                                      mouse.x - x,
-                                                      mouse.y - y + (var6 * cardspace) + cardspace - (a * cardspace),
-                                                      0);
-                            }
-                        }
-                        al_set_target_backbuffer(display);
-                        al_draw_bitmap(cbuffer, 0, 0, 0);
-                        al_flip_display();
-                    }
-
-                    cardcur = manycardcur[0][0];
-                    topcheck = try_move_to_top_row(cardcur);
-                    if (topcheck) {
-                        cardcur = 0;
-                        for (var6 = 1; var6 < var5; var6++) {
-                            top[var3][var2 + var6] = manycardcur[var6][0];
-                        }
-                    }
-
-                    if (!topcheck) {
-                        for (var6 = a; var6 < var5; var6++) {
-                            top[times][var6] = manycardcur[var6][0];
-                        }
-//                        play_sample(wrong, 250, 128, 1000, 0);
-                    }
-                }
+    if (drag_size > 0 && !mouse.buttons) {
+        if (drag_size == 1) {
+            acecheck = try_move_to_ace_row(drag_cards[0]);
+            if (acecheck) {
+                drag_size = 0;
+                return;
             }
         }
+
+        topcheck = try_move_to_top_row(drag_cards[0]);
+        // move rest of cards
+        int pile = drag_original_pile;
+        if (topcheck) {
+            pile = var3;
+        } else {
+//                        play_sample(wrong, 250, 128, 1000, 0);
+        }
+
+        int first_empty = 0;
+        for (; first_empty < 13; first_empty++) {
+            if (top[pile][first_empty] == 0) {
+                break;
+            }
+        }
+
+        if (topcheck) {
+            first_empty--; // card was already inserted before running empty check. decrement so it's the same as the other case
+        }
+
+        for (int i = 0; i < drag_size; i++) {
+            top[pile][first_empty + i] = drag_cards[i];
+        }
+
+        drag_size = 0;
     }
-    for (var6 = 0; var6 <= 12; var6++) {
-        for (var5 = 0; var5 <= 2; var5++) {
-            manycardcur[var6][var5] = 0;
+
+    // don't continue since we're already dragging something. We don't want to rerun the drag code
+    if (drag_size) {
+        return;
+    }
+
+    // If we're not clicking then there's nothing to drag
+    if (!mouse.buttons) {
+        return;
+    }
+
+    //top mouse movement (its the one that move many cards at once)
+    for (int pile = 0; pile < 7; pile++) {
+        int max = 13;
+        for (int c = 13; c >= 0; c--) {
+            if (top[pile][c] == 0) {
+                max = c;
+                continue; // card doesn't exist here
+            }
+
+            int card_x = START_X + (pile * 170);
+            int bottom_card_offset = botnum[pile] * (cardspace - 10);
+            int card_y = TOP_Y + bottom_card_offset + c * cardspace;
+
+            if (collides(mouse.x, mouse.y, card_x, card_y, 100, cardsizey)) {
+                // move cards to drag state
+                drag_size = max - c;
+                for (int i = 0; i < drag_size; i++) {
+                    drag_cards[i] = top[pile][c + i];
+                    top[pile][c + i] = 0;
+                }
+
+                // get offsets for mouse drawing
+                offset_x = card_x - mouse.x;
+                offset_y = card_y - mouse.y;
+
+                drag_original_pile = pile;
+                break;
+            }
         }
     }
 }
@@ -589,16 +536,15 @@ int try_move_to_top_row(int card){
 
         if (collides(mouse.x, mouse.y, card_x, card_y, card_w, card_h)) {
             printf("collides! %d top_cards: %d %d at card_y:%d\n", botnum[pile], top_cards, cardspace, card_y);
-            for (var2 = 0; var2 <= 13; var2++) {
+            for (int j = 0; j <= 13; j++) {
 
                 // do we want to place king card in top slot?
                 int king_to_empty = isKing && top[pile][0] == 0;
 
-                if (!top[pile][var2] && (can_move(card, top[pile][var2 - 1]) || king_to_empty)) {
-                    printf("Moving card %d to top[%d][%d] at card_y:%d\n", cardcur, pile, var2, card_y);
-                    top[pile][var2] = card;
+                if (!top[pile][j] && (can_move(card, top[pile][j - 1]) || king_to_empty)) {
+                    printf("Moving card %d to top[%d][%d] at card_y:%d\n", cardcur, pile, j, card_y);
+                    top[pile][j] = card;
                     var3 = pile;
-                    var1 = first_empty;
                     return 1;
                 }
             }
@@ -672,9 +618,6 @@ void setup() {
     newgame = 0;
 }
 
-
-
-
 void draw(){
     al_set_target_bitmap(buffer);
     al_draw_bitmap(backround,0,0,0);
@@ -691,15 +634,13 @@ void draw(){
     }
 
     // draw 3 deck cards
-    y = 24;
     a = deckcur;
     for (b = 0; b < 3; b++) {
         // deckcur is what the current page of the deck is exposed
         if (deck[a][b] && deckcur != -1) { // deckcur -1 means first page with does not have dealt cards
-            al_set_target_bitmap(buffer);
-            draw_card(deck[a][b], 350 + (b * cardspace), y);
+            draw_card(deck[a][b], 350 + (b * cardspace), DECK_Y);
         }
-    }//deck slot parser/draw
+    }
 
     if (deckcur < decktotal){
         if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, START_X, 24, 0);}
@@ -721,9 +662,8 @@ void draw(){
     }
 
 
-    x = 161;
+    x = 0;
     for (a = 0; a < 7; a++){
-        y = 224;
         temp3 = 0;
 
         for (b = 0; b < 13; b++){
@@ -731,11 +671,18 @@ void draw(){
                 if(a >= 0) {
                     temp3 = (botnum[a] * (cardspace - 10));
                 }
-                draw_card(top[a][b], x, y + temp3 + (b * cardspace));
+                draw_card(top[a][b], START_X + x, TOP_Y + temp3 + (b * cardspace));
             }
         }
         x += 170;
     }//top slot parser/draw
+
+    // draw cards being dragged
+    ALLEGRO_MOUSE_STATE mouse;
+    al_get_mouse_state(&mouse);
+    for (int i = 0; i < drag_size; i++) {
+        draw_card(drag_cards[i], mouse.x + offset_x, mouse.y + offset_y + (i * cardspace));
+    }
 
     if (done == 1){
         done = 2;
@@ -768,7 +715,6 @@ void draw_card(int card, int x, int y) {
  * botnum is the number of face down cards per pile
  */
 void find_bottom(){
-
     int pile_bottom_max = -1; // first does not have bottom
     for (int pile = 0; pile < 7; pile++) {
         int num = 0;
@@ -791,7 +737,6 @@ void find_bottom(){
  * @return bool
  */
 int can_move(int source, int dest){
-
     //cards are ones based. convert to zero based
     source = source - 1;
     dest = dest - 1;
@@ -818,7 +763,6 @@ int can_move(int source, int dest){
  * @return bool
  */
 int can_ace_move(int source, int dest){
-
     //cards are ones based. convert to zero based
     source = source - 1;
     dest = dest - 1;
@@ -853,6 +797,10 @@ int win_conditions(){
  * Safe to call multiple times
  */
 void flip_bottom(){
+    if (drag_size > 0) {
+        return;
+    }
+
     int pile_bottom_max = -1; // first does not have bottom
     for (int pile = 0; pile < 7; pile++) {
         if (top[pile][0] == 0) {
