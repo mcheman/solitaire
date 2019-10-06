@@ -21,7 +21,6 @@ ALLEGRO_BITMAP * buffer;
 ALLEGRO_BITMAP * outline;
 ALLEGRO_BITMAP * cardbitmap1;
 ALLEGRO_BITMAP * cardbitmap2;
-ALLEGRO_BITMAP * cbuffer;
 ALLEGRO_BITMAP * bmp_buff;
 
 ALLEGRO_DISPLAY * display;
@@ -67,7 +66,7 @@ int i, j, k;
 
 int drag_cards[13];
 int drag_size = 0;
-int drag_original_pile = 0;
+int *drag_original;
 int offset_x = 0;
 int offset_y = 0;
 
@@ -76,7 +75,6 @@ void draw();
 void draw_top();
 void find_bottom();
 void mouse();
-void highcolor_fade_out(int speed);
 int try_move_to_ace_row(int card);
 int try_move_to_top_row(int card);
 int can_move(int source, int dest);
@@ -109,7 +107,6 @@ int main (void)
     backround = al_load_bitmap("backround.bmp");
     outline = al_load_bitmap("outline.bmp");
     buffer = al_create_bitmap(SCREEN_W, SCREEN_H);
-    cbuffer = al_create_bitmap(SCREEN_W, SCREEN_H);
     cardbitmap1 = al_load_bitmap("cards1.bmp");
     cardbitmap2 = al_load_bitmap("cards22.bmp");
 
@@ -409,16 +406,15 @@ void mouse(){
 
         topcheck = try_move_to_top_row(drag_cards[0]);
         // move rest of cards
-        int pile = drag_original_pile;
         if (topcheck) {
-            pile = var3;
+            drag_original = top[var3];
         } else {
 //                        play_sample(wrong, 250, 128, 1000, 0);
         }
 
         int first_empty = 0;
         for (; first_empty < 13; first_empty++) {
-            if (top[pile][first_empty] == 0) {
+            if (drag_original[first_empty] == 0) {
                 break;
             }
         }
@@ -428,7 +424,7 @@ void mouse(){
         }
 
         for (int i = 0; i < drag_size; i++) {
-            top[pile][first_empty + i] = drag_cards[i];
+            drag_original[first_empty + i] = drag_cards[i];
         }
 
         drag_size = 0;
@@ -469,7 +465,7 @@ void mouse(){
                 offset_x = card_x - mouse.x;
                 offset_y = card_y - mouse.y;
 
-                drag_original_pile = pile;
+                drag_original = top[pile];
                 break;
             }
         }
@@ -624,21 +620,21 @@ void draw(){
     al_draw_bitmap(outline,0,0,0);
 
     // draw ace slots
-    for (a = 0; a < 4; a++){
-        for (b = 12; b >= 0; b--){
-            if (ace[a][b]){
-                draw_card(ace[a][b], ACE_X + (170 * (a)), DECK_Y);
+    for (int pile = 0; pile < 4; pile++){
+        for (int c = 12; c >= 0; c--){
+            if (ace[pile][c]){
+                draw_card(ace[pile][c], ACE_X + (170 * (pile)), DECK_Y);
                 break;
             }
         }
     }
 
     // draw 3 deck cards
-    a = deckcur;
-    for (b = 0; b < 3; b++) {
+    int pile = deckcur;
+    for (int c = 0; c < 3; c++) {
         // deckcur is what the current page of the deck is exposed
-        if (deck[a][b] && deckcur != -1) { // deckcur -1 means first page with does not have dealt cards
-            draw_card(deck[a][b], 350 + (b * cardspace), DECK_Y);
+        if (deck[pile][c] && deckcur != -1) { // deckcur -1 means first page with does not have dealt cards
+            draw_card(deck[pile][c], 350 + (c * cardspace), DECK_Y);
         }
     }
 
@@ -663,15 +659,15 @@ void draw(){
 
 
     x = 0;
-    for (a = 0; a < 7; a++){
+    for (int pile = 0; pile < 7; pile++){
         temp3 = 0;
 
-        for (b = 0; b < 13; b++){
-            if (top[a][b]){
-                if(a >= 0) {
-                    temp3 = (botnum[a] * (cardspace - 10));
+        for (int c = 0; c < 13; c++){
+            if (top[pile][c]){
+                if(pile >= 0) {
+                    temp3 = (botnum[pile] * (cardspace - 10));
                 }
-                draw_card(top[a][b], START_X + x, TOP_Y + temp3 + (b * cardspace));
+                draw_card(top[pile][c], START_X + x, TOP_Y + temp3 + (c * cardspace));
             }
         }
         x += 170;
