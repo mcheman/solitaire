@@ -21,7 +21,6 @@ ALLEGRO_BITMAP * buffer;
 ALLEGRO_BITMAP * outline;
 ALLEGRO_BITMAP * cardbitmap1;
 ALLEGRO_BITMAP * cardbitmap2;
-ALLEGRO_BITMAP * bmp_buff;
 
 ALLEGRO_DISPLAY * display;
 ALLEGRO_KEYBOARD_STATE state;
@@ -40,7 +39,6 @@ int cardspace_bottom = 20;
 int x,y,a,b;
 int botnum[7];
 
-int done = 0;
 int newgame = 1;
 
 int cardsizey = 145;
@@ -72,7 +70,6 @@ int offset_y = 0;
 
 void setup();
 void draw();
-void draw_top();
 void find_bottom();
 void mouse();
 int try_move_to_ace_row(int card);
@@ -103,7 +100,6 @@ int main (void)
     srand(time(NULL));
 //    srand(26);
 
-    bmp_buff = al_create_bitmap(SCREEN_W, SCREEN_H);
     backround = al_load_bitmap("backround.bmp");
     outline = al_load_bitmap("outline.bmp");
     buffer = al_create_bitmap(SCREEN_W, SCREEN_H);
@@ -135,7 +131,7 @@ int main (void)
 //undonumber = 1;
 
 
-    while (!done){
+    while (1){
         al_get_keyboard_state(&state);
 
         ALLEGRO_EVENT event;
@@ -147,14 +143,12 @@ int main (void)
             }
         }
 
-
         if (newgame) {
             setup();
         }
 
         //if (key[KEY_1]){set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1440,900,0,0);show_mouse(screen);}
         //  if (key[KEY_2]){set_gfx_mode(GFX_AUTODETECT_FULLSCREEN, 1680,1050,0,0);show_mouse(screen);}
-
 
         if (deckcur == -1){
             for (int i = 0; i < 8; i++){
@@ -172,7 +166,6 @@ int main (void)
 //        if (key[KEY_7]){set_window_title("Allegro rules!");}
 //        else {set_window_title("solitaire");}
 
-
         flip_bottom();
 
         draw();
@@ -180,9 +173,7 @@ int main (void)
         al_draw_bitmap(buffer, 0, 0, 0);
         al_flip_display();
 
-
         mouse();
-
 
         ////deck,top,ace,bottom
         //if (mouse()){
@@ -193,9 +184,7 @@ int main (void)
         //		if (scanit == '-'){undocur++;}
         //		if (undocur == undonumber){break;}
         //		if (feof(undo)){break;}
-
         //	}
-
 
         //	for (var1 = 0; var1 <= 7; var1++){
         //		for (var2 = 0; var2 <= 2; var2++){
@@ -219,16 +208,11 @@ int main (void)
         //	undonumber++;
         //}
 
-
-
         //for (var1 = 0; var1 <= 3; var1++){
         //textprintf_ex(screen,font,100 + (var1 * 100),200,makecol(0,0,0),makecol(250,250,250),"%d",ace[var1][0]);
         //}
 
-
         //textprintf_ex(screen,font,10,10,makecol(0,0,0),makecol(250,250,250),"%d",deckcur);
-
-
 
         /*   clear_keybuf();
            if (key[KEY_Z] && (key[KEY_RCONTROL] || key[KEY_LCONTROL]) && !pressed && undonumber){
@@ -239,9 +223,7 @@ int main (void)
                    if (scanit == '-'){undocur++;}
                    if (undocur == undonumber){break;}
                    if (feof(undo)){break;}
-
                }
-
 
                for (var1 = 0; var1 <= 7; var1++){
                    for (var2 = 0; var2 <= 2; var2++){
@@ -274,8 +256,6 @@ int main (void)
 
            if (!key[KEY_Z] || (!key[KEY_RCONTROL] || !key[KEY_LCONTROL])){pressed = 0;}*/
 
-
-
         if (al_key_down(&state, ALLEGRO_KEY_UP)){deckcur++;/*rest(30);*/}
         if (al_key_down(&state, ALLEGRO_KEY_DOWN)){deckcur--;/*rest(30);*/}
         if (deckcur < -1){deckcur = 7;}
@@ -288,8 +268,7 @@ int main (void)
 
         if (win_conditions() == 1){/*do a wild win screen*/
 //            fprintf(fp,"1");
-            done = 3;
-
+            break;
         }
 
         if (al_key_down(&state, ALLEGRO_KEY_ENTER)){
@@ -563,7 +542,6 @@ int collides(int x, int y, int box_x, int box_y, int box_w, int box_h) {
     return x > box_x && x < box_x + box_w && y > box_y && y < box_y + box_h;
 }
 
-
 /**
  * Shuffles deck and deals cards
  */
@@ -657,7 +635,6 @@ void draw(){
         }
     }
 
-
     x = 0;
     for (int pile = 0; pile < 7; pile++){
         temp3 = 0;
@@ -678,10 +655,6 @@ void draw(){
     al_get_mouse_state(&mouse);
     for (int i = 0; i < drag_size; i++) {
         draw_card(drag_cards[i], mouse.x + offset_x, mouse.y + offset_y + (i * cardspace));
-    }
-
-    if (done == 1){
-        done = 2;
     }
 }
 
