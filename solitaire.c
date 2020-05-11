@@ -16,6 +16,8 @@
 #define START_X 161
 #define ACE_X 671
 
+#define DECK_SIZE 24
+
 ALLEGRO_BITMAP * backround;
 ALLEGRO_BITMAP * buffer;
 ALLEGRO_BITMAP * outline;
@@ -39,8 +41,6 @@ int cardspace_bottom = 20;
 int x,y,a,b;
 int botnum[7];
 
-int newgame = 1;
-
 int cardsizey = 145;
 
 int undocur;
@@ -48,9 +48,10 @@ int undonumber = 0;
 int acecheck, topcheck;
 int cardcur;
 int pressed = 0;
-int deck[8][3];
+int deck[DECK_SIZE];
 int deckcur = -1;
-int decktotal = 7;
+int decktotal = 8;
+int deck_hand_size = 3;
 int top[7][13];
 int ace[4][13];
 int bottom[22]; // only first 20 are actually used
@@ -60,7 +61,6 @@ int lose,win;
 int scanit;
 
 int cardset = 1;
-int i, j, k;
 
 int drag_cards[13];
 int drag_size = 0;
@@ -68,7 +68,7 @@ int *drag_original;
 int offset_x = 0;
 int offset_y = 0;
 
-void setup();
+void setup_new_game_deck();
 void draw();
 void find_bottom();
 void mouse();
@@ -80,6 +80,9 @@ int win_conditions();
 void flip_bottom();
 int collides(int x, int y, int box_x, int box_y, int box_w, int box_h);
 void draw_card(int card, int x, int y);
+
+void next_deck_hand(int is_forward);
+void compact_deck();
 
 #define SCREEN_W 1440
 #define SCREEN_H 900
@@ -130,6 +133,7 @@ int main (void)
 //fprintf(undo,"-");
 //undonumber = 1;
 
+    setup_new_game_deck();
 
     while (1){
         al_get_keyboard_state(&state);
@@ -143,22 +147,8 @@ int main (void)
             }
         }
 
-        if (newgame) {
-            setup();
-        }
-
         //if (key[KEY_1]){set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1440,900,0,0);show_mouse(screen);}
         //  if (key[KEY_2]){set_gfx_mode(GFX_AUTODETECT_FULLSCREEN, 1680,1050,0,0);show_mouse(screen);}
-
-        if (deckcur == -1){
-            for (int i = 0; i < 8; i++){
-                for (int j = 0; j < 2; j++){
-                    if (deck[i][j] == 0){deck[i][j] = deck[i][j+1]; deck[i][j+1] = 0;}
-
-                }
-                if (deck[i][2] == 0 && i != 7){deck[i][2] = deck[i+1][0]; deck[i+1][0] = 0;}
-            }
-        }
 
         if (al_key_down(&state, ALLEGRO_KEY_2)){cardsizey = 155; cardset = 2;}
         if (al_key_down(&state, ALLEGRO_KEY_3)){cardsizey = 145; cardset = 1;}
@@ -256,15 +246,8 @@ int main (void)
 
            if (!key[KEY_Z] || (!key[KEY_RCONTROL] || !key[KEY_LCONTROL])){pressed = 0;}*/
 
-        if (al_key_down(&state, ALLEGRO_KEY_UP)){deckcur++;/*rest(30);*/}
-        if (al_key_down(&state, ALLEGRO_KEY_DOWN)){deckcur--;/*rest(30);*/}
-        if (deckcur < -1){deckcur = 7;}
-        if (deckcur > decktotal){deckcur =-1;}
-        int times = 0;
-        for (int i = 0; i <= 2; i++){
-            if (deck[decktotal][i] == 0){times++;}
-            if (times == 3){decktotal--;}
-        }
+        if (al_key_down(&state, ALLEGRO_KEY_UP)){next_deck_hand(1);/*rest(30);*/}
+        if (al_key_down(&state, ALLEGRO_KEY_DOWN)){next_deck_hand(0);/*rest(30);*/}
 
         if (win_conditions() == 1){/*do a wild win screen*/
 //            fprintf(fp,"1");
@@ -272,7 +255,7 @@ int main (void)
         }
 
         if (al_key_down(&state, ALLEGRO_KEY_ENTER)){
-            newgame = 1;
+            setup_new_game_deck();
         }
         if (al_key_down(&state, ALLEGRO_KEY_A)){ace[0][12] = 13; ace[1][12] = 26; ace[2][12] = 39; ace[3][12] = 52;}
 
@@ -288,22 +271,29 @@ void mouse(){
 
     // draw card from deck section
     if (mouse.x > START_X && mouse.x < START_X + 100 && mouse.y > DECK_Y && mouse.y < DECK_Y + cardsizey && mouse.buttons & 1 && !pressed){
-        deckcur++;
+        next_deck_hand(1);
         pressed = 1;
 //        play_sample(cardflip, 40, 60, 1000, 0);
     }
     if (mouse.x > START_X && mouse.x < START_X + 100 && mouse.y > DECK_Y && mouse.y < DECK_Y + cardsizey && mouse.buttons & 2 && !pressed){
-        deckcur--;
+        next_deck_hand(0);
         pressed = 1;
 //        play_sample(cardflip, 40, 60, 1000, 0);
     }
     if (!mouse.buttons){pressed = 0;}
 
     //deck move
+    int deck_index = -1;
     b = -1;
-    if (deck[deckcur][0]){b = 0;}
-    if (deck[deckcur][1]){b = 1;}
-    if (deck[deckcur][2]){b = 2;}
+    for (int c = 0; c < deck_hand_size; c++) {
+        int card_index = deckcur * deck_hand_size + c;
+        if (deck[card_index]) {
+            deck_index = card_index;
+            b = c;
+            break;
+        }
+    }
+
     //if (b == -1){return;}
 
     int deck_moved = 0;
@@ -315,14 +305,13 @@ void mouse(){
     // check if we want to start moving a card
 
     //deck mouse movement
-    if (drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, 350 + (b * cardspace), DECK_Y, 100, cardsizey)) {
-        offset_x = 350 + (b * cardspace) - mouse.x;
+    if (drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, 350 + ((deck_hand_size - b) * cardspace), DECK_Y, 100, cardsizey)) {
+        offset_x = 350 + ((deck_hand_size - b) * cardspace) - mouse.x;
         offset_y = DECK_Y - mouse.y;
-        cardcur = deck[deckcur][b];
-        deck[deckcur][b] = 0;
+        cardcur = deck[deck_index];
+        deck[deck_index] = 0;
         deck_moved = 1;
-        previous_index = b;
-        previous_pile = deckcur;
+        previous_index = deck_index;
     }
 
     //ace mouse movement
@@ -366,7 +355,7 @@ void mouse(){
         // we didn't move it anywhere, put card back
         if (!acecheck && !topcheck) {
             if (deck_moved) {
-                deck[previous_pile][previous_index] = cardcur;
+                deck[previous_index] = cardcur;
             } else if (ace_moved) {
                 ace[previous_pile][previous_index] = cardcur;
             }
@@ -450,6 +439,53 @@ void mouse(){
         }
     }
 }
+
+/**
+ * Draw the next deck hand
+ * @param is_forward 1 to advance the deck, 0 to go back one
+ */
+void next_deck_hand(int is_forward) {
+    deckcur += is_forward ? 1 : -1;
+
+    if (deckcur >= decktotal || deckcur < 0) {
+        deckcur = -1;
+        compact_deck();
+    }
+}
+
+/**
+ * Compresses space so the cards in the deck array are contiguous
+ * @return The total number of cards left in the deck
+ */
+void compact_deck() {
+    int num_cards = 0;
+
+    for (int i = 0; i < DECK_SIZE; i++) {
+        if (deck[i] == 0) { // no card present
+
+            // find next non empty card
+            int j = i + 1;
+            for (; j < DECK_SIZE; j++) {
+                if (deck[j] != 0) { // card we need to move forward in array
+                    break;
+                }
+            }
+
+            if (j < DECK_SIZE && deck[j] != 0) { // if there's a card present, we move it over the current empty element
+                deck[i] = deck[j];
+                deck[j] = 0;
+            }
+        }
+
+        if (deck[i] != 0) {
+            num_cards++;
+        }
+    }
+
+    num_cards += deck_hand_size - 1; // we add this to make sure it rounds up
+    decktotal = num_cards / deck_hand_size;
+}
+
 
 /**
  * @param card Currently selected card
@@ -545,8 +581,8 @@ int collides(int x, int y, int box_x, int box_y, int box_w, int box_h) {
 /**
  * Shuffles deck and deals cards
  */
-void setup() {
-    decktotal = 7;
+void setup_new_game_deck() {
+    decktotal = 8;
     //resets all card slots
     memset(top, 0, sizeof(top));
     memset(deck, 0, sizeof(deck));
@@ -554,7 +590,7 @@ void setup() {
     memset(bottom, 0, sizeof(bottom));
 
     // create cards in sorted order
-    for (i = 0; i < 52; i++){
+    for (int i = 0; i < 52; i++){
         cards[i] = i + 1;
     }
 
@@ -582,14 +618,11 @@ void setup() {
         bottom[i] = shuffled_cards[card_index++];
     }
 
-    for (i = 0; i < 8; i++){
-        for (j = 0; j < 3; j++){
-            deck[i][j] = shuffled_cards[card_index++];
-        }
+    for (int i = 0; i < 24; i++){
+        deck[i] = shuffled_cards[card_index++];
     }
 
     assert(card_index == 52);
-    newgame = 0;
 }
 
 void draw(){
@@ -607,16 +640,18 @@ void draw(){
         }
     }
 
-    // draw 3 deck cards
-    int pile = deckcur;
-    for (int c = 0; c < 3; c++) {
-        // deckcur is what the current page of the deck is exposed
-        if (deck[pile][c] && deckcur != -1) { // deckcur -1 means first page with does not have dealt cards
-            draw_card(deck[pile][c], 350 + (c * cardspace), DECK_Y);
+    // render 3 deck cards
+    // deckcur is what the current page of the deck is exposed
+    if (deckcur != -1) { // deckcur -1 means first page which does not have dealt cards
+        for (int c = deck_hand_size - 1; c >= 0; c--) {
+            int card = deck[deckcur * deck_hand_size + c];
+            if (card) {
+                draw_card(card, 350 + ((deck_hand_size - c) * cardspace), DECK_Y);
+            }
         }
     }
 
-    if (deckcur < decktotal){
+    if (deckcur < decktotal - 1){
         if (cardset == 1){al_draw_bitmap_region(cardbitmap1, 0, cardsizey * 4, 100, cardsizey, START_X, 24, 0);}
         if (cardset == 2){al_draw_bitmap_region(cardbitmap2, 0, cardsizey * 4, 100, cardsizey, START_X, 24, 0);}
     }
