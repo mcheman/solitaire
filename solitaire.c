@@ -17,6 +17,7 @@
 #define ACE_X 671
 
 #define DECK_SIZE 24
+#define HAND_START_X (161 + 170)
 
 ALLEGRO_BITMAP * backround;
 ALLEGRO_BITMAP * buffer;
@@ -50,7 +51,7 @@ int cardcur;
 int pressed = 0;
 int deck[DECK_SIZE];
 int deckcur = -1;
-int decktotal = 8;
+int decktotal;
 int deck_hand_size = 3;
 int top[7][13];
 int ace[4][13];
@@ -135,6 +136,8 @@ int main (void)
 
     setup_new_game_deck();
 
+    int size_pressed = 0;
+
     while (1){
         al_get_keyboard_state(&state);
 
@@ -152,6 +155,21 @@ int main (void)
 
         if (al_key_down(&state, ALLEGRO_KEY_2)){cardsizey = 155; cardset = 2;}
         if (al_key_down(&state, ALLEGRO_KEY_3)){cardsizey = 145; cardset = 1;}
+
+        if (!size_pressed && deck_hand_size > 1 && al_key_down(&state, ALLEGRO_KEY_9)){
+            deck_hand_size--;
+            compact_deck(); // update decktotal
+            size_pressed = 1;
+        }
+        if (!size_pressed && deck_hand_size < DECK_SIZE && al_key_down(&state, ALLEGRO_KEY_0)){
+            deck_hand_size++;
+            compact_deck(); // update decktotal
+            size_pressed = 1;
+        }
+
+        if (!al_key_down(&state, ALLEGRO_KEY_9) && !al_key_down(&state, ALLEGRO_KEY_0)) {
+            size_pressed = 0;
+        }
 
 //        if (key[KEY_7]){set_window_title("Allegro rules!");}
 //        else {set_window_title("solitaire");}
@@ -285,7 +303,7 @@ void mouse(){
     //deck move
     int deck_index = -1;
     b = -1;
-    for (int c = 0; c < deck_hand_size; c++) {
+    for (int c = deck_hand_size - 1; c >= 0; c--) {
         int card_index = deckcur * deck_hand_size + c;
         if (deck[card_index]) {
             deck_index = card_index;
@@ -305,8 +323,8 @@ void mouse(){
     // check if we want to start moving a card
 
     //deck mouse movement
-    if (drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, 350 + ((deck_hand_size - b) * cardspace), DECK_Y, 100, cardsizey)) {
-        offset_x = 350 + ((deck_hand_size - b) * cardspace) - mouse.x;
+    if (drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, HAND_START_X + (b * cardspace), DECK_Y, 100, cardsizey)) {
+        offset_x = HAND_START_X + (b * cardspace) - mouse.x;
         offset_y = DECK_Y - mouse.y;
         cardcur = deck[deck_index];
         deck[deck_index] = 0;
@@ -455,7 +473,7 @@ void next_deck_hand(int is_forward) {
 
 /**
  * Compresses space so the cards in the deck array are contiguous
- * @return The total number of cards left in the deck
+ * sets decktotal global
  */
 void compact_deck() {
     int num_cards = 0;
@@ -582,7 +600,6 @@ int collides(int x, int y, int box_x, int box_y, int box_w, int box_h) {
  * Shuffles deck and deals cards
  */
 void setup_new_game_deck() {
-    decktotal = 8;
     //resets all card slots
     memset(top, 0, sizeof(top));
     memset(deck, 0, sizeof(deck));
@@ -623,6 +640,7 @@ void setup_new_game_deck() {
     }
 
     assert(card_index == 52);
+    compact_deck();
 }
 
 void draw(){
@@ -643,10 +661,11 @@ void draw(){
     // render 3 deck cards
     // deckcur is what the current page of the deck is exposed
     if (deckcur != -1) { // deckcur -1 means first page which does not have dealt cards
-        for (int c = deck_hand_size - 1; c >= 0; c--) {
-            int card = deck[deckcur * deck_hand_size + c];
-            if (card) {
-                draw_card(card, 350 + ((deck_hand_size - c) * cardspace), DECK_Y);
+        for (int c = 0; c < deck_hand_size; c++) {
+
+            int card_index = deckcur * deck_hand_size + c;
+            if (card_index < DECK_SIZE && deck[card_index]) {
+                draw_card(deck[card_index], HAND_START_X + (c * cardspace), DECK_Y);
             }
         }
     }
