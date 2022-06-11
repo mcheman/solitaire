@@ -1,5 +1,7 @@
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -10,6 +12,8 @@
 //40|41|42|43|44|45|46|47|48|49|50|51|52 spades
 //
 //a | 2| 3| 4| 5| 6| 7| 8| 9|10| j| q| k
+
+// todo extract out common "game engine" runtime between this and starminer
 
 #define TOP_Y 224
 #define DECK_Y 24
@@ -29,8 +33,8 @@ ALLEGRO_DISPLAY * display;
 ALLEGRO_KEYBOARD_STATE state;
 ALLEGRO_EVENT_QUEUE * event_queue;
 
-//SAMPLE * wrong;
-//SAMPLE * cardflip;
+ALLEGRO_SAMPLE * wrong;
+ALLEGRO_SAMPLE * cardflip;
 
 //FILE *fp;
 
@@ -95,6 +99,10 @@ int main (void)
     al_init_image_addon();
     al_install_keyboard();
     al_install_mouse();
+    al_install_audio();
+    al_reserve_samples(8);
+    al_init_acodec_addon();
+
     display = al_create_display(SCREEN_W, SCREEN_H);
     event_queue = al_create_event_queue();
     al_register_event_source(event_queue, al_get_display_event_source(display));
@@ -114,8 +122,8 @@ int main (void)
     al_convert_mask_to_alpha(cardbitmap1, al_map_rgb(255, 0, 255));
     al_convert_mask_to_alpha(cardbitmap2, al_map_rgb(255, 0, 255));
 
-//    wrong = load_sample("wong.wav");
-//    cardflip = load_sample("cardflip.wav");
+    wrong = al_load_sample("wong.wav");
+    cardflip = al_load_sample("cardflip.wav");
 
 
     al_set_system_mouse_cursor(display, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
@@ -291,12 +299,12 @@ void mouse(){
     if (mouse.x > START_X && mouse.x < START_X + 100 && mouse.y > DECK_Y && mouse.y < DECK_Y + cardsizey && mouse.buttons & 1 && !pressed){
         next_deck_hand(1);
         pressed = 1;
-//        play_sample(cardflip, 40, 60, 1000, 0);
+        al_play_sample(cardflip, 0.16, -0.53, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
     }
     if (mouse.x > START_X && mouse.x < START_X + 100 && mouse.y > DECK_Y && mouse.y < DECK_Y + cardsizey && mouse.buttons & 2 && !pressed){
         next_deck_hand(0);
         pressed = 1;
-//        play_sample(cardflip, 40, 60, 1000, 0);
+        al_play_sample(cardflip, 0.16, -0.53, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
     }
     if (!mouse.buttons){pressed = 0;}
 
@@ -323,7 +331,7 @@ void mouse(){
     // check if we want to start moving a card
 
     //deck mouse movement
-    if (drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, HAND_START_X + (b * cardspace), DECK_Y, 100, cardsizey)) {
+    if (mouse.buttons && drag_size == 0 && b != -1 && deckcur != -1 && collides(mouse.x, mouse.y, HAND_START_X + (b * cardspace), DECK_Y, 100, cardsizey)) {
         offset_x = HAND_START_X + (b * cardspace) - mouse.x;
         offset_y = DECK_Y - mouse.y;
         cardcur = deck[deck_index];
@@ -337,7 +345,7 @@ void mouse(){
         for (a = 0; a < 12; a++) {
             if (!ace[piles][a]) { break; }
         }
-        if (drag_size == 0 && collides(mouse.x, mouse.y, ACE_X + (piles * 170), DECK_Y, 100, cardsizey)) {
+        if (mouse.buttons && drag_size == 0 && collides(mouse.x, mouse.y, ACE_X + (piles * 170), DECK_Y, 100, cardsizey)) {
             offset_x = ACE_X + (piles * 170) - mouse.x;
             offset_y = DECK_Y - mouse.y;
             cardcur = ace[piles][a - 1];
@@ -377,7 +385,7 @@ void mouse(){
             } else if (ace_moved) {
                 ace[previous_pile][previous_index] = cardcur;
             }
-            // play_sample(wrong, 250, 128, 1000, 0);
+            al_play_sample(wrong, 0.98, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
         }
     }
 
@@ -395,7 +403,7 @@ void mouse(){
         if (topcheck) {
             drag_original = top[var3];
         } else {
-//                        play_sample(wrong, 250, 128, 1000, 0);
+            al_play_sample(wrong, 0.98, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
         }
 
         int first_empty = 0;
