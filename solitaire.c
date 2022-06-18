@@ -26,6 +26,7 @@
 ALLEGRO_BITMAP * backround;
 ALLEGRO_BITMAP * buffer;
 ALLEGRO_BITMAP * outline;
+ALLEGRO_BITMAP * cardbitmap;
 ALLEGRO_BITMAP * cardbitmap1;
 ALLEGRO_BITMAP * cardbitmap2;
 
@@ -277,6 +278,7 @@ int main (void)
 
         if (win_conditions() == 1){/*do a wild win screen*/
 //            fprintf(fp,"1");
+            printf("Winner!"); // todo restore cool fade out and message
             break;
         }
 
@@ -296,12 +298,12 @@ void mouse(){
     al_get_mouse_state(&mouse);
 
     // draw card from deck section
-    if (mouse.x > START_X && mouse.x < START_X + 100 && mouse.y > DECK_Y && mouse.y < DECK_Y + cardsizey && mouse.buttons & 1 && !pressed){
+    if (mouse.x > START_X && mouse.x <= START_X + 100 && mouse.y > DECK_Y && mouse.y <= DECK_Y + cardsizey && mouse.buttons & 1 && !pressed){
         next_deck_hand(1);
         pressed = 1;
         al_play_sample(cardflip, 0.16, -0.53, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
     }
-    if (mouse.x > START_X && mouse.x < START_X + 100 && mouse.y > DECK_Y && mouse.y < DECK_Y + cardsizey && mouse.buttons & 2 && !pressed){
+    if (mouse.x > START_X && mouse.x <= START_X + 100 && mouse.y > DECK_Y && mouse.y <= DECK_Y + cardsizey && mouse.buttons & 2 && !pressed){
         next_deck_hand(0);
         pressed = 1;
         al_play_sample(cardflip, 0.16, -0.53, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
@@ -686,7 +688,7 @@ void draw(){
 
     // bottom draw
 
-    ALLEGRO_BITMAP * cardbitmap = cardset == 1 ? cardbitmap1 : cardbitmap2;
+    cardbitmap = cardset == 1 ? cardbitmap1 : cardbitmap2;
 
     find_bottom();
     for (int pile = 0; pile < 7; pile++) {
@@ -721,7 +723,7 @@ void draw(){
 }
 
 /**
- * Draws card at x, y location
+ * Draws (graphics) card at x, y location
  *
  * @param card 1 - 53 card index
  * @param x
@@ -736,8 +738,7 @@ void draw_card(int card, int x, int y) {
     int suit = card / 13;
     int rank = card % 13;
 
-    // todo switch bitmap at global level
-    al_draw_bitmap_region(cardbitmap1, 100 * rank, cardsizey * suit, 100, cardsizey, x, y, 0);
+    al_draw_bitmap_region(cardbitmap, 100 * rank, cardsizey * suit, 100, cardsizey, x, y, 0);
 }
 
 
