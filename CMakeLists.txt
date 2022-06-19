@@ -12,4 +12,5 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Werror")
 
 add_executable(solitaire solitaire.c)
 
-target_link_libraries(solitaire "allegro" "allegro_image" "allegro_audio" "allegro_acodec")
+# m is for math.h's math library
+target_link_libraries(solitaire allegro allegro_image allegro_audio allegro_acodec allegro_font m)

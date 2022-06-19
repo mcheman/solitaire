@@ -2,9 +2,12 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_font.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
+#include <math.h>
 
 //1 | 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13 clubs
 //14|15|16|17|18|19|20|21|22|23|24|25|26 diamonds
@@ -29,6 +32,8 @@ ALLEGRO_BITMAP * outline;
 ALLEGRO_BITMAP * cardbitmap;
 ALLEGRO_BITMAP * cardbitmap1;
 ALLEGRO_BITMAP * cardbitmap2;
+
+ALLEGRO_FONT *font;
 
 ALLEGRO_DISPLAY * display;
 ALLEGRO_KEYBOARD_STATE state;
@@ -90,6 +95,8 @@ void draw_card(int card, int x, int y);
 void next_deck_hand(int is_forward);
 void compact_deck();
 
+void highcolor_fade_out(int speed);
+
 #define SCREEN_W 1440
 #define SCREEN_H 900
 
@@ -103,6 +110,7 @@ int main (void)
     al_install_audio();
     al_reserve_samples(8);
     al_init_acodec_addon();
+    al_init_font_addon();
 
     display = al_create_display(SCREEN_W, SCREEN_H);
     event_queue = al_create_event_queue();
@@ -125,6 +133,8 @@ int main (void)
 
     wrong = al_load_sample("wong.wav");
     cardflip = al_load_sample("cardflip.wav");
+
+    font = al_create_builtin_font();
 
 
     al_set_system_mouse_cursor(display, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
@@ -278,6 +288,7 @@ int main (void)
 
         if (win_conditions() == 1){/*do a wild win screen*/
 //            fprintf(fp,"1");
+            highcolor_fade_out(24);
             printf("Winner!"); // todo restore cool fade out and message
             break;
         }
@@ -826,7 +837,7 @@ int win_conditions(){
 
 /**
  * Flips up a bottom pile card if all the cards on top have been moved away
- * Safe to call multiple times
+ * Safe to call multiple times (idempotent)
  */
 void flip_bottom(){
     if (drag_size > 0) {
@@ -855,4 +866,59 @@ void flip_bottom(){
     // 6  7  8  9
     // 10 11 12 13 14
     // 15 16 17 18 19 20
+}
+
+
+void highcolor_fade_out(int speed) {
+    // 24 passed for speed originally at 60fps. This should be .177 seconds for full original fade.
+    int fade_ms = 1000;
+
+    ALLEGRO_EVENT event;
+    ALLEGRO_MOUSE_STATE mouse;
+
+    ALLEGRO_BITMAP *font_image = al_create_bitmap(94, 8);
+
+    al_set_target_bitmap(font_image);
+    al_draw_textf(font, al_map_rgb(250, 250, 250), 0, 0, 0, "You Have Won");
+
+    al_set_target_backbuffer(display);
+    al_current_time();
+
+    struct timeval start, current;
+    gettimeofday(&start, NULL);
+
+    long int elapsed_ms = 0;
+
+    float alpha = 1.0;
+    do {
+        al_get_keyboard_state(&state);
+        al_get_mouse_state(&mouse);
+        while (!al_is_event_queue_empty(event_queue)) {
+            al_get_next_event(event_queue, &event);
+            if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+                return;
+            }
+        }
+
+        if (al_key_down(&state, ALLEGRO_KEY_ESCAPE) || al_key_down(&state, ALLEGRO_KEY_ENTER) || mouse.buttons) {
+            return;
+        }
+
+        al_draw_tinted_bitmap(buffer, al_map_rgb_f(alpha, alpha, alpha), 0, 0, 0);
+
+        //al_draw_textf(font, al_map_rgb(250, 250, 250), SCREEN_W / 2 - 29, SCREEN_H / 2, 0, "You Have Won");
+        float scale = (1.0 - alpha) * 10.0;
+        float x = SCREEN_W / 2 - 47 * scale;
+        float y = SCREEN_H / 2 - 4 * scale;
+        al_draw_scaled_bitmap(font_image, 0, 0, 94, 8, x, y, 94 * scale, 8 * scale, 0);
+        al_flip_display();
+        gettimeofday(&current, NULL);
+
+        elapsed_ms = (current.tv_usec - start.tv_usec) / 1000 + (current.tv_sec - start.tv_sec) * 1000;
+        alpha = 1 - ((float) elapsed_ms / (float) fade_ms);
+        if (alpha < 0) {
+            alpha = 0;
+        }
+
+    } while (1);
 }
