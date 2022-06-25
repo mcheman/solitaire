@@ -121,18 +121,18 @@ int main (void)
     srand(time(NULL));
 //    srand(26);
 
-    backround = al_load_bitmap("backround.bmp");
-    outline = al_load_bitmap("outline.bmp");
+    backround = al_load_bitmap("assets/background.bmp");
+    outline = al_load_bitmap("assets/outline.bmp");
     buffer = al_create_bitmap(SCREEN_W, SCREEN_H);
-    cardbitmap1 = al_load_bitmap("cards1.bmp");
-    cardbitmap2 = al_load_bitmap("cards22.bmp");
+    cardbitmap1 = al_load_bitmap("assets/cards1.bmp");
+    cardbitmap2 = al_load_bitmap("assets/cards22.bmp");
 
     al_convert_mask_to_alpha(outline, al_map_rgb(255, 0, 255));
     al_convert_mask_to_alpha(cardbitmap1, al_map_rgb(255, 0, 255));
     al_convert_mask_to_alpha(cardbitmap2, al_map_rgb(255, 0, 255));
 
-    wrong = al_load_sample("wong.wav");
-    cardflip = al_load_sample("cardflip.wav");
+    wrong = al_load_sample("assets/wong.wav");
+    cardflip = al_load_sample("assets/cardflip.wav");
 
     font = al_create_builtin_font();
 
